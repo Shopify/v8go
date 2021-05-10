@@ -50,6 +50,7 @@ typedef struct {
 
 extern void Init();
 extern IsolatePtr NewIsolate();
+extern void IsolatePerformMicrotaskCheckpoint(IsolatePtr ptr);
 extern void IsolateDispose(IsolatePtr ptr);
 extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
@@ -79,6 +80,7 @@ extern TemplatePtr NewObjectTemplate(IsolatePtr iso_ptr);
 extern ValuePtr ObjectTemplateNewInstance(TemplatePtr ptr, ContextPtr ctx_ptr);
 
 extern TemplatePtr NewFunctionTemplate(IsolatePtr iso_ptr, int callback_ref);
+extern ValuePtr FunctionTemplateGetFunction(TemplatePtr ptr, ContextPtr ctx_ptr);
 
 extern ValuePtr NewValueInteger(IsolatePtr iso_ptr, int32_t v);
 extern ValuePtr NewValueIntegerFromUnsigned(IsolatePtr iso_ptr, uint32_t v);
@@ -171,6 +173,9 @@ extern ValuePtr PromiseResolverGetPromise(ValuePtr ptr);
 int PromiseResolverResolve(ValuePtr ptr, ValuePtr val_ptr);
 int PromiseResolverReject(ValuePtr ptr, ValuePtr val_ptr);
 int PromiseState(ValuePtr ptr);
+ValuePtr PromiseThen(ValuePtr ptr, int callback_ref);
+ValuePtr PromiseThen2(ValuePtr ptr, int on_fulfilled_ref, int on_rejected_ref);
+ValuePtr PromiseCatch(ValuePtr ptr, int callback_ref);
 extern ValuePtr PromiseResult(ValuePtr ptr);
 
 extern RtnValue FunctionCall(ValuePtr ptr, int argc, ValuePtr argv[]);

@@ -160,6 +160,11 @@ IsolatePtr NewIsolate() {
   return static_cast<IsolatePtr>(iso);
 }
 
+void IsolatePerformMicrotaskCheckpoint(IsolatePtr ptr) {
+  ISOLATE_SCOPE(ptr)
+  iso->PerformMicrotaskCheckpoint();
+}
+
 void IsolateDispose(IsolatePtr ptr) {
   if (ptr == nullptr) {
     return;
@@ -322,6 +327,22 @@ TemplatePtr NewFunctionTemplate(IsolatePtr iso_ptr, int callback_ref) {
   ot->ptr.Reset(iso,
                 FunctionTemplate::New(iso, FunctionTemplateCallback, cbData));
   return static_cast<TemplatePtr>(ot);
+}
+
+ValuePtr FunctionTemplateGetFunction(TemplatePtr ptr, ContextPtr ctx_ptr) {
+  LOCAL_TEMPLATE(ptr);
+  m_ctx* ctx = static_cast<m_ctx*>(ctx_ptr);
+  Local<Context> local_ctx = ctx->ptr.Get(iso);
+  Context::Scope context_scope(local_ctx);
+
+  Local<FunctionTemplate> fn_tmpl = tmpl.As<FunctionTemplate>();
+  MaybeLocal<Function> fn = fn_tmpl->GetFunction(local_ctx);
+
+  m_value* val = new m_value;
+  val->iso = iso;
+  val->ctx = ctx;
+  val->ptr = Persistent<Value, CopyablePersistentTraits<Value>>(iso, fn.ToLocalChecked());
+  return tracked_value(ctx, val);
 }
 
 /********** Context **********/
@@ -1075,6 +1096,54 @@ int PromiseState(ValuePtr ptr) {
   LOCAL_VALUE(ptr)
   Local<Promise> promise = value.As<Promise>();
   return promise->State();
+}
+
+ValuePtr PromiseThen(ValuePtr ptr, int callback_ref) {
+  LOCAL_VALUE(ptr)
+  Local<Promise> promise = value.As<Promise>();
+  Local<Integer> cbData = Integer::New(iso, callback_ref);
+  Local<Function> func = Function::New(local_ctx, FunctionTemplateCallback, cbData)
+    .ToLocalChecked();
+  Local<Promise> result = promise->Then(local_ctx, func).ToLocalChecked();
+  m_value* promise_val = new m_value;
+  promise_val->iso = iso;
+  promise_val->ctx = ctx;
+  promise_val->ptr =
+      Persistent<Value, CopyablePersistentTraits<Value>>(iso, promise);
+  return tracked_value(ctx, promise_val);
+}
+
+ValuePtr PromiseThen2(ValuePtr ptr, int on_fulfilled_ref, int on_rejected_ref) {
+  LOCAL_VALUE(ptr)
+  Local<Promise> promise = value.As<Promise>();
+  Local<Integer> onFulfilledData = Integer::New(iso, on_fulfilled_ref);
+  Local<Function> onFulfilledFunc = Function::New(local_ctx, FunctionTemplateCallback, onFulfilledData)
+    .ToLocalChecked();
+  Local<Integer> onRejectedData = Integer::New(iso, on_rejected_ref);
+  Local<Function> onRejectedFunc = Function::New(local_ctx, FunctionTemplateCallback, onRejectedData)
+    .ToLocalChecked();
+  Local<Promise> result = promise->Then(local_ctx, onFulfilledFunc, onRejectedFunc).ToLocalChecked();
+  m_value* promise_val = new m_value;
+  promise_val->iso = iso;
+  promise_val->ctx = ctx;
+  promise_val->ptr =
+      Persistent<Value, CopyablePersistentTraits<Value>>(iso, promise);
+  return tracked_value(ctx, promise_val);
+}
+
+ValuePtr PromiseCatch(ValuePtr ptr, int callback_ref) {
+  LOCAL_VALUE(ptr)
+  Local<Promise> promise = value.As<Promise>();
+  Local<Integer> cbData = Integer::New(iso, callback_ref);
+  Local<Function> func = Function::New(local_ctx, FunctionTemplateCallback, cbData)
+    .ToLocalChecked();
+  Local<Promise> result = promise->Catch(local_ctx, func).ToLocalChecked();
+  m_value* promise_val = new m_value;
+  promise_val->iso = iso;
+  promise_val->ctx = ctx;
+  promise_val->ptr =
+      Persistent<Value, CopyablePersistentTraits<Value>>(iso, promise);
+  return tracked_value(ctx, promise_val);
 }
 
 ValuePtr PromiseResult(ValuePtr ptr) {
