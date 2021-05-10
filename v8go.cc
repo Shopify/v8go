@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "v8go.h"
+#include "v8go-profiler.h"
 
 #include <stdio.h>
 
@@ -1176,6 +1177,30 @@ ValuePtr ExceptionTypeError(IsolatePtr iso_ptr, const char* message) {
   val->ptr = Persistent<Value, CopyablePersistentTraits<Value>>(
       iso, Exception::TypeError(msg));
   return static_cast<ValuePtr>(val);
+}
+
+/********** Profiler **********/
+
+ProfilerPtr NewProfiler(ContextPtr ctx_ptr) {
+  LOCAL_CONTEXT(ctx_ptr);
+  Profiler* profiler = new Profiler(local_ctx);
+  return static_cast<ProfilerPtr>(profiler);
+}
+
+void ProfilerStart(ProfilerPtr ptr) {
+  Profiler* profiler = static_cast<Profiler*>(ptr);
+  profiler->start();
+}
+
+const char* ProfilerStop(ProfilerPtr ptr) {
+  Profiler* profiler = static_cast<Profiler*>(ptr);
+  std::string response = profiler->stop();
+  char* cstr = strcpy(new char[response.length() + 1], response.c_str());
+  return cstr;
+}
+
+void ProfilerFree(ProfilerPtr ptr) {
+  delete static_cast<Profiler*>(ptr);
 }
 
 /********** v8::V8 **********/
