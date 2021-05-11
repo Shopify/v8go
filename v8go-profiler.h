@@ -8,18 +8,15 @@
 
 class InspectorFrontend final : public v8_inspector::V8Inspector::Channel {
  public:
-  InspectorFrontend(v8::Local<v8::Context> context);
+  InspectorFrontend() {}
   void sendResponse(int callId, std::unique_ptr<v8_inspector::StringBuffer> buffer) override;
   void sendNotification(std::unique_ptr<v8_inspector::StringBuffer> buffer) override;
   void flushProtocolNotifications() override {};
 
-  std::string response;
+  std::vector<v8_inspector::StringView> responses;
 
  private:
   void saveResponse(v8_inspector::StringView view);
-
-  v8::Isolate* isolate_;
-  v8::Global<v8::Context> context_;
 };
 
 class InspectorClient : public v8_inspector::V8InspectorClient {

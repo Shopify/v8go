@@ -4,11 +4,6 @@
 #include <libplatform/libplatform.h>
 #include "v8go-profiler.h"
 
-InspectorFrontend::InspectorFrontend(v8::Local<v8::Context> context) {
-  isolate_ = context->GetIsolate();
-  context_.Reset(isolate_, context);
-}
-
 void InspectorFrontend::sendResponse(int callId, std::unique_ptr<v8_inspector::StringBuffer> buffer) {
   saveResponse(buffer->string());
 }
@@ -18,32 +13,14 @@ void InspectorFrontend::sendNotification(std::unique_ptr<v8_inspector::StringBuf
 }
 
 void InspectorFrontend::saveResponse(v8_inspector::StringView view) {
-  v8::HandleScope handle_scope(isolate_);
-  v8::Local<v8::String> encoded =
-      (view.is8Bit()
-           ? v8::String::NewFromOneByte(
-                 isolate_,
-                 reinterpret_cast<const uint8_t*>(view.characters8()),
-                 v8::NewStringType::kNormal, view.length())
-           : v8::String::NewFromTwoByte(
-                 isolate_,
-                 reinterpret_cast<const uint16_t*>(view.characters16()),
-                 v8::NewStringType::kNormal, view.length()))
-          .ToLocalChecked();
-
-  v8::String::Utf8Value utf8(isolate_, encoded);
-  response.assign(*utf8, utf8.length());
+  responses.push_back(view);
 }
 
 Profiler::Profiler(v8::Local<v8::Context> context) {
   isolate_ = context->GetIsolate();
-
   inspector_ = v8_inspector::V8Inspector::create(isolate_, new InspectorClient());
-
-  frontend_ = std::unique_ptr<InspectorFrontend>(new InspectorFrontend(context));
-
+  frontend_ = std::unique_ptr<InspectorFrontend>(new InspectorFrontend());
   session_ = inspector_->connect(1, frontend_.get(), v8_inspector::StringView());
-
   inspector_->contextCreated(v8_inspector::V8ContextInfo(context, 1, v8_inspector::StringView()));
 }
 
@@ -54,11 +31,28 @@ void Profiler::start() {
 
 std::string Profiler::stop() {
   send_message("{\"id\":2,\"method\":\"Profiler.stop\"}");
-  return frontend_->response;
+
+  // v8::HandleScope handle_scope(isolate_);
+  // v8::Local<v8::String> encoded =
+  //     (view.is8Bit()
+  //          ? v8::String::NewFromOneByte(
+  //                isolate_,
+  //                reinterpret_cast<const uint8_t*>(view.characters8()),
+  //                v8::NewStringType::kNormal, view.length())
+  //          : v8::String::NewFromTwoByte(
+  //                isolate_,
+  //                reinterpret_cast<const uint16_t*>(view.characters16()),
+  //                v8::NewStringType::kNormal, view.length()))
+  //         .ToLocalChecked();
+
+  // v8::String::Utf8Value utf8(isolate_, encoded);
+  // response.assign(*utf8, utf8.length());
+
+  return std::string("Hello");
 }
 
 void Profiler::send_message(std::string msg) {
   v8_inspector::StringView message_view(reinterpret_cast<const uint8_t *>(msg.c_str()), msg.length());
-  frontend_->response.clear();
+  frontend_->responses.clear();
   session_->dispatchProtocolMessage(message_view);
 }

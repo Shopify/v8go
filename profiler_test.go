@@ -11,7 +11,7 @@ import (
 )
 
 func TestProfiler(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 
 	ctx, _ := v8go.NewContext()
 	profiler, _ := v8go.NewProfiler(ctx)
