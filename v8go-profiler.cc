@@ -1,7 +1,7 @@
 #include <string>
 #include <iostream>
 
-#include <libplatform/libplatform.h>
+#include "v8go-internal.h"
 #include "v8go-profiler.h"
 
 InspectorFrontend::InspectorFrontend(v8::Local<v8::Context> context) {

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "v8go.h"
+#include "v8go-internal.h"
 #include "v8go-profiler.h"
 
 #include <stdio.h>
@@ -13,14 +13,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
-#if defined(__MINGW32__) || defined(__MINGW64__)
-// MinGW header files do not implicitly include windows.h
-struct _EXCEPTION_POINTERS;
-#endif
-
-#include "libplatform/libplatform.h"
-#include "v8.h"
 
 using namespace v8;
 
