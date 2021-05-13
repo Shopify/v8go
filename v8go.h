@@ -185,7 +185,7 @@ extern ValuePtr ExceptionTypeError(IsolatePtr iso_ptr, const char* message);
 
 extern ProfilerPtr NewProfiler(ContextPtr ctx);
 extern void ProfilerStart(ProfilerPtr ptr);
-extern const char* ProfilerStop(ProfilerPtr ptr);
+extern const char* ProfilerStop(ProfilerPtr ptr, int *length);
 extern void ProfilerFree(ProfilerPtr ptr);
 
 const char* Version();

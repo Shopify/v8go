@@ -9,10 +9,31 @@ package v8go
 import "C"
 
 import (
+	"encoding/json"
 	"errors"
 	"runtime"
 	"unsafe"
 )
+
+type ProfileResult struct {
+	Profile json.RawMessage `json:"profile"`
+}
+
+// TODO: Handle error messages
+type ProfileMessage struct {
+	// ignore id field
+	Result ProfileResult `json:"result"`
+}
+
+func extractProfileData(jsonInspectorMessage string) (string, error) {
+	var profile ProfileMessage
+	err := json.Unmarshal([]byte(jsonInspectorMessage), &profile)
+	if err != nil {
+		return "", err
+	} else {
+		return string(profile.Result.Profile), nil
+	}
+}
 
 type Profiler struct {
 	ptr C.ProfilerPtr
@@ -37,10 +58,12 @@ func (p *Profiler) Start() {
 	C.ProfilerStart(p.ptr)
 }
 
-func (p *Profiler) Stop() string {
-	s := C.ProfilerStop(p.ptr)
+func (p *Profiler) Stop() (string, error) {
+	var length C.int = 0
+	s := C.ProfilerStop(p.ptr, &length)
+	data, err := extractProfileData(C.GoStringN(s, length))
 	defer C.free(unsafe.Pointer(s))
-	return C.GoString(s)
+	return data, err
 }
 
 func (p *Profiler) finalizer() {

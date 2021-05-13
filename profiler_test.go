@@ -18,5 +18,11 @@ func TestProfiler(t *testing.T) {
 
 	profiler.Start()
 	ctx.RunScript("const foo = {}; foo", "")
-	profiler.Stop()
+	jsonProfile, err := profiler.Stop()
+	if err != nil {
+		t.Errorf("Invalid json profile: %v", err)
+	}
+	if len(jsonProfile) == 0 {
+		t.Error("Missing profile data")
+	}
 }

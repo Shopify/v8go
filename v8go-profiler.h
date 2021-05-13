@@ -8,15 +8,19 @@
 
 class InspectorFrontend final : public v8_inspector::V8Inspector::Channel {
  public:
-  InspectorFrontend() {}
+  InspectorFrontend(v8::Local<v8::Context> context);
   void sendResponse(int callId, std::unique_ptr<v8_inspector::StringBuffer> buffer) override;
   void sendNotification(std::unique_ptr<v8_inspector::StringBuffer> buffer) override;
   void flushProtocolNotifications() override {};
 
-  std::vector<v8_inspector::StringView> responses;
+  void clearResponse();
+  const char* cStringResponse(int *length);
 
  private:
-  void saveResponse(v8_inspector::StringView view);
+
+  std::unique_ptr<v8_inspector::StringBuffer> response_;
+  v8::Isolate* isolate_;
+  v8::Global<v8::Context> context_;
 };
 
 class InspectorClient : public v8_inspector::V8InspectorClient {
@@ -27,7 +31,9 @@ class Profiler final {
   Profiler(v8::Local<v8::Context> context);
 
   void start();
-  std::string stop();
+  const char *stop(int *length);
+
+  v8::Isolate* isolate;
 
  private:
   void send_message(std::string msg);
@@ -35,7 +41,6 @@ class Profiler final {
   std::unique_ptr<v8_inspector::V8Inspector> inspector_;
   std::unique_ptr<v8_inspector::V8InspectorSession> session_;
   std::unique_ptr<InspectorFrontend> frontend_;
-  v8::Isolate* isolate_;
 };
 
 #endif  // V8GO_PROFILER_H

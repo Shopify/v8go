@@ -1189,14 +1189,14 @@ ProfilerPtr NewProfiler(ContextPtr ctx_ptr) {
 
 void ProfilerStart(ProfilerPtr ptr) {
   Profiler* profiler = static_cast<Profiler*>(ptr);
+  Locker lock(profiler->isolate);
   profiler->start();
 }
 
-const char* ProfilerStop(ProfilerPtr ptr) {
+const char* ProfilerStop(ProfilerPtr ptr, int *length) {
   Profiler* profiler = static_cast<Profiler*>(ptr);
-  std::string response = profiler->stop();
-  char* cstr = strcpy(new char[response.length() + 1], response.c_str());
-  return cstr;
+  Locker lock(profiler->isolate);
+  return profiler->stop(length);
 }
 
 void ProfilerFree(ProfilerPtr ptr) {
