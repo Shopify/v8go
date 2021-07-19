@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Support for calling constructors functions with NewInstance on Function
+- Build v8 with i18n support
+
+## [v0.6.0] - 2021-05-11
+
+### Added
 - Promise resolver and promise result
 - Convert a Value to a Function and invoke it. Thanks to [@robfig](https://github.com/robfig)
 - Windows static binary. Thanks to [@cleiner](https://github.com/cleiner)
 - Setting/unsetting of V8 feature flags
+- Register promise callbacks in Go. Thanks to [@robfig](https://github.com/robfig)
+- Get Function from a template for a given context. Thanks to [@robfig](https://github.com/robfig)
 
 ### Changed
 - Upgrade to V8 9.0.257.18
