@@ -132,6 +132,10 @@ extern "C" {
   Isolate::Scope isolate_scope(iso);             \
   HandleScope handle_scope(iso);
 
+#define ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr) \
+  ISOLATE_SCOPE(iso_ptr);                       \
+  m_ctx* ctx = static_cast<m_ctx*>(iso->GetData(0));
+
 void Init() {
 #ifdef _WIN32
   V8::InitializeExternalStartupData(".");
@@ -202,7 +206,8 @@ IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr) {
 }
 
 const unsigned char* CompileScript(IsolatePtr iso_ptr, const char* s) {
-  ISOLATE_SCOPE(iso_ptr)
+  ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr);
+  Context::Scope context_scope(ctx->ptr.Get(iso));
 
   Local<String> src =
       String::NewFromUtf8(iso, s, NewStringType::kNormal).ToLocalChecked();
@@ -543,10 +548,6 @@ ValuePtr ContextGlobal(ContextPtr ctx_ptr) {
   }                                             \
   Context::Scope context_scope(local_ctx);      \
   Local<Value> value = val->ptr.Get(iso);
-
-#define ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr) \
-  ISOLATE_SCOPE(iso_ptr);                       \
-  m_ctx* ctx = static_cast<m_ctx*>(iso->GetData(0));
 
 ValuePtr NewValueInteger(IsolatePtr iso_ptr, int32_t v) {
   ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr);
