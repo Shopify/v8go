@@ -4,11 +4,13 @@
 
 package v8go
 
+// #include <stdlib.h>
 // #include "v8go.h"
 import "C"
 
 import (
 	"sync"
+	"unsafe"
 )
 
 var v8once sync.Once
@@ -62,6 +64,13 @@ func NewIsolate() (*Isolate, error) {
 // of JavaScript execution in the given isolate.
 func (i *Isolate) TerminateExecution() {
 	C.IsolateTerminateExecution(i.ptr)
+}
+
+func (i *Isolate) CompileScript(source string) {
+	cSource := C.CString(source)
+	defer C.free(unsafe.Pointer(cSource))
+
+	C.CompileScript(i.ptr, cSource)
 }
 
 // GetHeapStatistics returns heap statistics for an isolate.

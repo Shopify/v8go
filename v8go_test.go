@@ -5,6 +5,7 @@
 package v8go_test
 
 import (
+	"log"
 	"regexp"
 	"testing"
 
@@ -34,4 +35,12 @@ func TestSetFlag(t *testing.T) {
 	if _, err := ctx.RunScript("c = 1", "nouse_strict.js"); err != nil {
 		t.Errorf("expected <nil> error, but got: %v", err)
 	}
+}
+
+func TestGetBytecode(t *testing.T) {
+	iso, err := v8go.NewIsolate()
+	if err != nil {
+		log.Fatal(err)
+	}
+	iso.CompileScript("a = 1")
 }

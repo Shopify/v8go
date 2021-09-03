@@ -201,6 +201,24 @@ IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr) {
                             hs.number_of_detached_contexts()};
 }
 
+const unsigned char* CompileScript(IsolatePtr iso_ptr, const char* s) {
+  ISOLATE_SCOPE(iso_ptr)
+
+  Local<String> src =
+      String::NewFromUtf8(iso, s, NewStringType::kNormal).ToLocalChecked();
+
+  ScriptCompiler::Source source(src);
+
+  auto unboundedScript = ScriptCompiler::CompileUnboundScript(
+      iso,
+      &source,
+      ScriptCompiler::CompileOptions::kNoCompileOptions).ToLocalChecked();
+
+  ScriptCompiler::CachedData* cachedData = ScriptCompiler::CreateCodeCache(unboundedScript);
+
+  return cachedData->data;
+}
+
 /********** Template **********/
 
 #define LOCAL_TEMPLATE(ptr)                       \
