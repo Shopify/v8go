@@ -16,6 +16,11 @@ import (
 	"rogchap.com/v8go"
 )
 
+func TestCompileScript(t *testing.T) {
+	iso, _ := v8go.NewIsolate()
+	iso.CompileScript("a = 1")
+}
+
 func TestIsolateTermination(t *testing.T) {
 	t.Parallel()
 	iso, _ := v8go.NewIsolate()

@@ -209,7 +209,7 @@ const unsigned char* CompileScript(IsolatePtr iso_ptr, const char* s) {
 
   ScriptCompiler::Source source(src);
 
-  auto unboundedScript = ScriptCompiler::CompileUnboundScript(
+  Local<UnboundScript> unboundedScript = ScriptCompiler::CompileUnboundScript(
       iso,
       &source,
       ScriptCompiler::CompileOptions::kNoCompileOptions).ToLocalChecked();
