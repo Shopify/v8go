@@ -17,8 +17,13 @@ import (
 )
 
 func TestCompileScript(t *testing.T) {
-	iso, _ := v8go.NewIsolate()
-	iso.CompileScript("a = 1")
+	i1, _ := v8go.NewIsolate()
+	i1.CompileScript("function foo() { return 'bar'; }")
+	i1.Dispose()
+
+	i2, _ := v8go.NewIsolate()
+	i2.CompileScript("function square(a) { return a ^ 2; };function cube(a) { return a ^ 3; };")
+	i2.Dispose()
 }
 
 func TestIsolateTermination(t *testing.T) {

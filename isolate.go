@@ -9,6 +9,7 @@ package v8go
 import "C"
 
 import (
+	"fmt"
 	"sync"
 	"unsafe"
 )
@@ -70,7 +71,8 @@ func (i *Isolate) CompileScript(source string) {
 	cSource := C.CString(source)
 	defer C.free(unsafe.Pointer(cSource))
 
-	C.CompileScript(i.ptr, cSource)
+	data := (*C.char)(unsafe.Pointer(C.CompileScript(i.ptr, cSource)))
+	fmt.Printf("%x\n", []byte(C.GoString(data)))
 }
 
 // GetHeapStatistics returns heap statistics for an isolate.
