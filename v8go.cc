@@ -205,7 +205,7 @@ IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr) {
                             hs.number_of_detached_contexts()};
 }
 
-const unsigned char* CompileScript(IsolatePtr iso_ptr, const char* s) {
+compiledResult CompileScript(IsolatePtr iso_ptr, const char* s) {
   ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr);
   Context::Scope context_scope(ctx->ptr.Get(iso));
 
@@ -221,7 +221,7 @@ const unsigned char* CompileScript(IsolatePtr iso_ptr, const char* s) {
 
   ScriptCompiler::CachedData* cachedData = ScriptCompiler::CreateCodeCache(unboundedScript);
 
-  return cachedData->data;
+  return compiledResult{cachedData->data, cachedData->length};
 }
 
 /********** Template **********/

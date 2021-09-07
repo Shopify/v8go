@@ -17,13 +17,17 @@ import (
 )
 
 func TestCompileScript(t *testing.T) {
+	s1 := "function foo() { return 'bar'; }"
 	i1, _ := v8go.NewIsolate()
-	i1.CompileScript("function foo() { return 'bar'; }")
-	i1.Dispose()
+	defer i1.Dispose()
+	b1 := i1.CompileScript(s1)
+	t.Logf("%s -> %x\n", s1, b1)
 
+	s2 := "function square(a) { return a ^ 2; };function cube(a) { return a ^ 3; };"
 	i2, _ := v8go.NewIsolate()
-	i2.CompileScript("function square(a) { return a ^ 2; };function cube(a) { return a ^ 3; };")
-	i2.Dispose()
+	defer i2.Dispose()
+	b2 := i2.CompileScript(s2)
+	t.Logf("%s -> %x\n", s2, b2)
 }
 
 func TestIsolateTermination(t *testing.T) {
