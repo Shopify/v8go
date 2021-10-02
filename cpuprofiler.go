@@ -24,7 +24,7 @@ func NewCPUProfiler(iso *Isolate) *CPUProfiler {
 	}
 }
 
-// Dispose will dispose the profiler; subsequent calls will panic.
+// Dispose will dispose the profiler.
 func (c *CPUProfiler) Dispose() {
 	if c.ptr == nil {
 		return
