@@ -26,3 +26,18 @@ func (c *CPUProfile) GetTitle() string {
 	str := C.CpuProfileGetTitle(c.iso.ptr, c.ptr)
 	return C.GoString(str)
 }
+
+// Returns number of samples recorded. The samples are not recorded unless
+// recordSamples parameter of CpuProfiler.StartCpuProfiling is true.
+func (c *CPUProfile) GetSamplesCount() int {
+	i := C.CpuProfileGetSamplesCount(c.ptr)
+	return int(i)
+}
+
+func (c *CPUProfile) Delete() {
+	if c.ptr == nil {
+		return
+	}
+	C.CpuProfileDelete(c.ptr)
+	c.ptr = nil
+}

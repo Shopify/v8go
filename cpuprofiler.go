@@ -35,8 +35,10 @@ func (c *CPUProfiler) Dispose() {
 
 // StartProfiling starts collecting a CPU profile. Title may be an empty string. Several
 // profiles may be collected at once. Attempts to start collecting several
-// profiles with the same title are silently ignored.
-func (c *CPUProfiler) StartProfiling(title string) {
+// profiles with the same title are silently ignored. recordSamples parameter
+// controls whether individual samples should be recorded in addition to the
+// aggregated tree.
+func (c *CPUProfiler) StartProfiling(title string, recordSamples bool) {
 	if c.ptr == nil || c.iso.ptr == nil {
 		return
 	}

@@ -16,6 +16,9 @@ type CPUProfileNode struct {
 
 // Returns function name (empty string for anonymous functions.)
 func (c *CPUProfileNode) GetFunctionName() string {
+	if c.ptr == nil {
+		panic("")
+	}
 	str := C.CpuProfileNodeGetFunctionName(c.ptr)
 	return C.GoString(str)
 }

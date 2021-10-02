@@ -21,7 +21,7 @@ func TestCPUProfile(t *testing.T) {
 	cpuProfiler := v8go.NewCPUProfiler(iso)
 	defer cpuProfiler.Dispose()
 
-	cpuProfiler.StartProfiling("cpuprofiletest")
+	cpuProfiler.StartProfiling("cpuprofiletest", true)
 
 	_, err := ctx.RunScript(profileScript, "script.js")
 	fatalIf(t, err)
@@ -36,9 +36,14 @@ func TestCPUProfile(t *testing.T) {
 	if cpuProfile == nil {
 		t.Fatal("expected profiler not to be nil")
 	}
+	defer cpuProfile.Delete()
 
 	if cpuProfile.GetTitle() != "cpuprofiletest" {
 		t.Errorf("expected cpuprofiletest, but got %v", cpuProfile.GetTitle())
+	}
+
+	if cpuProfile.GetSamplesCount() > 0 {
+		t.Errorf("expected samples count greater than 0, but got %d", cpuProfile.GetSamplesCount())
 	}
 
 	root := cpuProfile.GetTopDownRoot()

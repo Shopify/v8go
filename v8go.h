@@ -30,9 +30,13 @@ typedef m_ctx* ContextPtr;
 typedef m_value* ValuePtr;
 typedef m_template* TemplatePtr;
 
-typedef void* CpuProfilerPtr;
-typedef void* CpuProfilePtr;
-typedef void* CpuProfileNodePtr;
+typedef struct m_cpuProfiler m_cpuProfiler;
+typedef struct m_cpuProfile m_cpuProfile;
+typedef struct m_cpuProfileNode m_cpuProfileNode;
+
+typedef m_cpuProfiler* CpuProfilerPtr;
+typedef m_cpuProfile* CpuProfilePtr;
+typedef m_cpuProfileNode* CpuProfileNodePtr;
 
 typedef struct {
   const char* msg;
@@ -88,6 +92,8 @@ extern CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr,
                                               CpuProfilerPtr ptr,
                                               const char* title);
 extern const char* CpuProfileGetTitle(IsolatePtr iso_ptr, CpuProfilePtr ptr);
+extern int CpuProfileGetSamplesCount(CpuProfilePtr ptr);
+extern void CpuProfileDelete(CpuProfilePtr ptr);
 
 extern CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr ptr);
 

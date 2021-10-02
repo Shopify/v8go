@@ -44,10 +44,20 @@ struct m_template {
   Persistent<Template> ptr;
 };
 
-typedef struct {
+struct m_cpuProfiler {
   Isolate* iso;
-  CpuProfilePtr ptr;
-} m_cpuProfile;
+  CpuProfiler* ptr;
+};
+
+struct m_cpuProfile {
+  Isolate* iso;
+  CpuProfile* ptr;
+};
+
+struct m_cpuProfileNode {
+  /* Isolate* iso; */
+  const CpuProfileNode* ptr;
+};
 
 const char* CopyString(std::string str) {
   int len = str.length();
@@ -222,94 +232,104 @@ CpuProfilerPtr NewCpuProfiler(IsolatePtr iso_ptr) {
   Isolate::Scope isolate_scope(iso);
   HandleScope handle_scope(iso);
 
-  CpuProfiler* cp = CpuProfiler::New(iso);
-  return cp;
+  m_cpuProfiler* c = new m_cpuProfiler;
+  c->iso = iso;
+  c->ptr = CpuProfiler::New(iso);
+  return c;
 }
 
-void CpuProfilerDispose(CpuProfilerPtr ptr) {
-  CpuProfiler* cp = static_cast<CpuProfiler*>(ptr);
-  cp->Dispose();
+void CpuProfilerDispose(CpuProfilerPtr cpuProfiler) {
+  if (cpuProfiler->ptr == nullptr) {
+    return;
+  }
+  cpuProfiler->ptr->Dispose();
 }
 
-void CpuProfilerStartProfiling(IsolatePtr iso_ptr, CpuProfilerPtr ptr, const char* title) {
+void CpuProfilerStartProfiling(IsolatePtr iso_ptr, CpuProfilerPtr cpuProfiler, const char* title) {
   Isolate* iso = static_cast<Isolate*>(iso_ptr);
   Locker locker(iso);
   Isolate::Scope isolate_scope(iso);
   HandleScope handle_scope(iso);
-
-  CpuProfiler* cp = static_cast<CpuProfiler*>(ptr);
 
   Local<String> title_str =
       String::NewFromUtf8(iso, title, NewStringType::kNormal).ToLocalChecked();
 
-  cp->StartProfiling(title_str);
+  cpuProfiler->ptr->StartProfiling(title_str);
 }
 
 
-CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr, CpuProfilerPtr ptr, const char* title) {
+CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr, CpuProfilerPtr cpuProfiler, const char* title) {
   Isolate* iso = static_cast<Isolate*>(iso_ptr);
   Locker locker(iso);
   Isolate::Scope isolate_scope(iso);
   HandleScope handle_scope(iso);
-
-  CpuProfiler* cp = static_cast<CpuProfiler*>(ptr);
 
   Local<String> title_str =
       String::NewFromUtf8(iso, title, NewStringType::kNormal).ToLocalChecked();
 
-  CpuProfile* cpuProfile = cp->StopProfiling(title_str);
-
-  return cpuProfile;
+  m_cpuProfile* c = new m_cpuProfile;
+  c->iso = iso;
+  c->ptr = cpuProfiler->ptr->StopProfiling(title_str);
+  return c;
 }
 
-const char* CpuProfileGetTitle(IsolatePtr iso_ptr, CpuProfilePtr ptr) {
+void CpuProfileDelete(CpuProfilePtr cpuProfile) {
+  if (cpuProfile->ptr == nullptr) {
+    return;
+  }
+  cpuProfile->ptr->Delete();
+}
+
+const char* CpuProfileGetTitle(IsolatePtr iso_ptr, CpuProfilePtr cpuProfile) {
   Isolate* iso = static_cast<Isolate*>(iso_ptr);
   Locker locker(iso);
   Isolate::Scope isolate_scope(iso);
   HandleScope handle_scope(iso);
 
-  CpuProfile* cp = static_cast<CpuProfile*>(ptr);
-  Local<String> str = cp->GetTitle();
+  Local<String> str = cpuProfile->ptr->GetTitle();
   String::Utf8Value title(iso, str);
   return CopyString(title);
 }
 
-CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr ptr) {
-  CpuProfile* cp = static_cast<CpuProfile*>(ptr);
-  const CpuProfileNode* cpuProfileNode = cp->GetTopDownRoot();
-  return const_cast<CpuProfileNode*>(cpuProfileNode);
+int CpuProfileGetSamplesCount(CpuProfilePtr cpuProfile) {
+  return cpuProfile->ptr->GetSamplesCount();
 }
 
-int CpuProfileNodeGetChildrenCount(CpuProfileNodePtr ptr) {
-  CpuProfileNode* cpn = static_cast<CpuProfileNode*>(ptr);
-  return cpn->GetChildrenCount();
+CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr cpuProfile) {
+  const CpuProfileNode* topDownRoot = cpuProfile->ptr->GetTopDownRoot();
+  m_cpuProfileNode* c = new m_cpuProfileNode;
+  c->ptr = topDownRoot;
+  return c;
 }
 
-CpuProfileNodePtr CpuProfileNodeGetChild(CpuProfilePtr ptr, int index) {
-  CpuProfileNode* cp = static_cast<CpuProfileNode*>(ptr);
-  const CpuProfileNode* cpuProfileNode = cp->GetChild(index);
-  return const_cast<CpuProfileNode*>(cpuProfileNode);
+int CpuProfileNodeGetChildrenCount(CpuProfileNodePtr cpuProfileNode) {
+  return cpuProfileNode->ptr->GetChildrenCount();
 }
 
-CpuProfileNodePtr CpuProfileNodeGetParent(CpuProfilePtr ptr) {
-  CpuProfileNode* cp = static_cast<CpuProfileNode*>(ptr);
-  const CpuProfileNode* cpuProfileNode = cp->GetParent();
-  return const_cast<CpuProfileNode*>(cpuProfileNode);
+CpuProfileNodePtr CpuProfileNodeGetChild(CpuProfileNodePtr cpuProfileNode, int index) {
+  const CpuProfileNode* child = cpuProfileNode->ptr->GetChild(index);
+  m_cpuProfileNode* c = new m_cpuProfileNode;
+  c->ptr = child;
+  return c;
 }
 
-const char* CpuProfileNodeGetFunctionName(CpuProfileNodePtr ptr) {
-  CpuProfileNode* cpn = static_cast<CpuProfileNode*>(ptr);
-  return cpn->GetFunctionNameStr();
+CpuProfileNodePtr CpuProfileNodeGetParent(CpuProfileNodePtr cpuProfileNode) {
+  const CpuProfileNode* parent = cpuProfileNode->ptr->GetParent();
+  m_cpuProfileNode* c = new m_cpuProfileNode;
+  c->ptr = parent;
+  return c;
 }
 
-int CpuProfileNodeGetLineNumber(CpuProfileNodePtr ptr) {
-  CpuProfileNode* cpn = static_cast<CpuProfileNode*>(ptr);
-  return cpn->GetLineNumber();
+const char* CpuProfileNodeGetFunctionName(CpuProfileNodePtr cpuProfileNode) {
+  return cpuProfileNode->ptr->GetFunctionNameStr();
 }
 
-int CpuProfileNodeGetColumnNumber(CpuProfilerPtr ptr) {
-  CpuProfileNode* cpn = static_cast<CpuProfileNode*>(ptr);
-  return cpn->GetColumnNumber();
+int CpuProfileNodeGetLineNumber(CpuProfileNodePtr cpuProfileNode) {
+  return cpuProfileNode->ptr->GetLineNumber();
+}
+
+int CpuProfileNodeGetColumnNumber(CpuProfileNodePtr cpuProfileNode) {
+  return cpuProfileNode->ptr->GetColumnNumber();
 }
 
 

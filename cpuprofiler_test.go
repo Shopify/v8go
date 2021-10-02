@@ -22,14 +22,14 @@ func TestCPUProfilerDispose(t *testing.T) {
 	cpuProfiler.Dispose()
 
 	// verify does not panic once disposed
-	cpuProfiler.StartProfiling("")
+	cpuProfiler.StartProfiling("", false)
 	cpuProfiler.StopProfiling("")
 
 	cpuProfiler = v8go.NewCPUProfiler(iso)
 	defer cpuProfiler.Dispose()
 	iso.Dispose()
 	// verify does not panic once isolate disposed
-	cpuProfiler.StartProfiling("")
+	cpuProfiler.StartProfiling("", false)
 	cpuProfiler.StopProfiling("")
 }
 
@@ -44,7 +44,7 @@ func TestCPUProfiler(t *testing.T) {
 	cpuProfiler := v8go.NewCPUProfiler(iso)
 	defer cpuProfiler.Dispose()
 
-	cpuProfiler.StartProfiling("cpuprofilertest")
+	cpuProfiler.StartProfiling("cpuprofilertest", false)
 
 	_, err := ctx.RunScript(profileScript, "script.js")
 	fatalIf(t, err)
@@ -59,6 +59,7 @@ func TestCPUProfiler(t *testing.T) {
 	if cpuProfile == nil {
 		t.Fatal("expected profiler not to be nil")
 	}
+	defer cpuProfile.Delete()
 	root := cpuProfile.GetTopDownRoot()
 	if root == nil {
 		t.Fatal("expected root not to be nil")
