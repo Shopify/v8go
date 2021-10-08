@@ -10,46 +10,46 @@ import "C"
 
 // CPUProfileNode represents a node in a call graph.
 type CPUProfileNode struct {
-	ptr C.CpuProfileNodePtr
-	iso *Isolate
+	functionName string
+	lineNumber   int
+	columnNumber int
+
+	children []*CPUProfileNode
+}
+
+func NewCPUProfileNode(functionName string, lineNumber int, columnNumber int, children []*CPUProfileNode) *CPUProfileNode {
+	return &CPUProfileNode{
+		functionName: functionName,
+		lineNumber:   lineNumber,
+		columnNumber: columnNumber,
+		children:     children,
+	}
 }
 
 // Returns function name (empty string for anonymous functions.)
 func (c *CPUProfileNode) GetFunctionName() string {
-	str := C.CpuProfileNodeGetFunctionName(c.ptr)
-	return C.GoString(str)
+	return c.functionName
 }
 
 // Retrieves number of children.
 func (c *CPUProfileNode) GetChildrenCount() int {
-	i := C.CpuProfileNodeGetChildrenCount(c.ptr)
-	return int(i)
+	return len(c.children)
 }
 
 // Retrieves a child node by index.
 func (c *CPUProfileNode) GetChild(index int) *CPUProfileNode {
-	count := c.GetChildrenCount()
-	if index < 0 || index > count {
+	if index < 0 || index > len(c.children) {
 		return nil
 	}
-	ptr := C.CpuProfileNodeGetChild(c.ptr, C.int(index))
-	return &CPUProfileNode{ptr: ptr, iso: c.iso}
-}
-
-// Retrieves the ancestor node, or null if the root.
-func (c *CPUProfileNode) GetParent() *CPUProfileNode {
-	ptr := C.CpuProfileNodeGetParent(c.ptr)
-	return &CPUProfileNode{ptr: ptr, iso: c.iso}
+	return c.children[index]
 }
 
 // Returns the number, 1-based, of the line where the function originates.
 func (c *CPUProfileNode) GetLineNumber() int {
-	i := C.CpuProfileNodeGetLineNumber(c.ptr)
-	return int(i)
+	return c.lineNumber
 }
 
 //  Returns 1-based number of the column where the function originates.
 func (c *CPUProfileNode) GetColumnNumber() int {
-	i := C.CpuProfileNodeGetColumnNumber(c.ptr)
-	return int(i)
+	return c.columnNumber
 }

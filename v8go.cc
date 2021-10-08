@@ -50,13 +50,18 @@ struct m_cpuProfiler {
 };
 
 struct m_cpuProfile {
-  Isolate* iso;
   CpuProfile* ptr;
+  const char* title;
+  int samplesCount;
+  m_cpuProfileNode* root;
 };
 
 struct m_cpuProfileNode {
-  /* Isolate* iso; */
   const CpuProfileNode* ptr;
+  const char* functionName;
+  int lineNumber;
+  int columnNumber;
+  int childrenCount;
 };
 
 const char* CopyString(std::string str) {
@@ -257,7 +262,6 @@ void CpuProfilerStartProfiling(IsolatePtr iso_ptr, CpuProfilerPtr cpuProfiler, c
   cpuProfiler->ptr->StartProfiling(title_str);
 }
 
-
 CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr, CpuProfilerPtr cpuProfiler, const char* title) {
   Isolate* iso = static_cast<Isolate*>(iso_ptr);
   Locker locker(iso);
@@ -267,9 +271,58 @@ CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr, CpuProfilerPtr cpuPro
   Local<String> title_str =
       String::NewFromUtf8(iso, title, NewStringType::kNormal).ToLocalChecked();
 
+  CpuProfile* cpuProfile = cpuProfiler->ptr->StopProfiling(title_str);
+
+  int samplesCount = cpuProfile->GetSamplesCount();
+
+  const CpuProfileNode* r = cpuProfile->GetTopDownRoot();
+  m_cpuProfileNode* root = new m_cpuProfileNode;
+  root->ptr = r;
+  root->childrenCount = r->GetChildrenCount();
+  root->functionName = r->GetFunctionNameStr();
+  root->lineNumber = r->GetLineNumber();
+  root->columnNumber = r->GetColumnNumber();
+
   m_cpuProfile* c = new m_cpuProfile;
-  c->iso = iso;
-  c->ptr = cpuProfiler->ptr->StopProfiling(title_str);
+  c->ptr = cpuProfile;
+  c->title = title;
+  c->samplesCount = samplesCount;
+  c->root = root;
+  return c;
+}
+
+CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr ptr) {
+  return ptr->root;
+}
+
+int CpuProfileGetSamplesCount(CpuProfilePtr ptr) {
+  return ptr->samplesCount;
+}
+
+int CpuProfileNodeGetChildrenCount(CpuProfileNodePtr ptr) {
+  return ptr->childrenCount;
+}
+
+const char* CpuProfileNodeGetFunctionName(CpuProfileNodePtr ptr) {
+  return ptr->functionName;
+}
+
+int CpuProfileNodeGetLineNumber(CpuProfileNodePtr ptr) {
+  return ptr->lineNumber;
+}
+
+int CpuProfileNodeGetColumnNumber(CpuProfileNodePtr ptr) {
+  return ptr->columnNumber;
+}
+
+CpuProfileNodePtr CpuProfileNodeGetChild(CpuProfileNodePtr cpuProfileNode, int index) {
+  const CpuProfileNode* child = cpuProfileNode->ptr->GetChild(index);
+  m_cpuProfileNode* c = new m_cpuProfileNode;
+  c->ptr = child;
+  c->functionName = child->GetFunctionNameStr();
+  c->lineNumber = child->GetLineNumber();
+  c->columnNumber = child->GetColumnNumber();
+  c->childrenCount = child->GetChildrenCount();
   return c;
 }
 
@@ -279,59 +332,6 @@ void CpuProfileDelete(CpuProfilePtr cpuProfile) {
   }
   cpuProfile->ptr->Delete();
 }
-
-const char* CpuProfileGetTitle(IsolatePtr iso_ptr, CpuProfilePtr cpuProfile) {
-  Isolate* iso = static_cast<Isolate*>(iso_ptr);
-  Locker locker(iso);
-  Isolate::Scope isolate_scope(iso);
-  HandleScope handle_scope(iso);
-
-  Local<String> str = cpuProfile->ptr->GetTitle();
-  String::Utf8Value title(iso, str);
-  return CopyString(title);
-}
-
-int CpuProfileGetSamplesCount(CpuProfilePtr cpuProfile) {
-  return cpuProfile->ptr->GetSamplesCount();
-}
-
-CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr cpuProfile) {
-  const CpuProfileNode* topDownRoot = cpuProfile->ptr->GetTopDownRoot();
-  m_cpuProfileNode* c = new m_cpuProfileNode;
-  c->ptr = topDownRoot;
-  return c;
-}
-
-int CpuProfileNodeGetChildrenCount(CpuProfileNodePtr cpuProfileNode) {
-  return cpuProfileNode->ptr->GetChildrenCount();
-}
-
-CpuProfileNodePtr CpuProfileNodeGetChild(CpuProfileNodePtr cpuProfileNode, int index) {
-  const CpuProfileNode* child = cpuProfileNode->ptr->GetChild(index);
-  m_cpuProfileNode* c = new m_cpuProfileNode;
-  c->ptr = child;
-  return c;
-}
-
-CpuProfileNodePtr CpuProfileNodeGetParent(CpuProfileNodePtr cpuProfileNode) {
-  const CpuProfileNode* parent = cpuProfileNode->ptr->GetParent();
-  m_cpuProfileNode* c = new m_cpuProfileNode;
-  c->ptr = parent;
-  return c;
-}
-
-const char* CpuProfileNodeGetFunctionName(CpuProfileNodePtr cpuProfileNode) {
-  return cpuProfileNode->ptr->GetFunctionNameStr();
-}
-
-int CpuProfileNodeGetLineNumber(CpuProfileNodePtr cpuProfileNode) {
-  return cpuProfileNode->ptr->GetLineNumber();
-}
-
-int CpuProfileNodeGetColumnNumber(CpuProfileNodePtr cpuProfileNode) {
-  return cpuProfileNode->ptr->GetColumnNumber();
-}
-
 
 /********** Template **********/
 

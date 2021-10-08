@@ -13,25 +13,27 @@ import "C"
 type CPUProfile struct {
 	ptr C.CpuProfilePtr
 	iso *Isolate
+
+	title        string
+	samplesCount int
+
+	topDownRoot *CPUProfileNode
 }
 
 // Returns the root node of the top down call tree.
 func (c *CPUProfile) GetTopDownRoot() *CPUProfileNode {
-	ptr := C.CpuProfileGetTopDownRoot(c.ptr)
-	return &CPUProfileNode{ptr: ptr, iso: c.iso}
+	return c.topDownRoot
 }
 
 // Returns CPU profile title.
 func (c *CPUProfile) GetTitle() string {
-	str := C.CpuProfileGetTitle(c.iso.ptr, c.ptr)
-	return C.GoString(str)
+	return c.title
 }
 
 // Returns number of samples recorded. The samples are not recorded unless
 // recordSamples parameter of CpuProfiler.StartCpuProfiling is true.
 func (c *CPUProfile) GetSamplesCount() int {
-	i := C.CpuProfileGetSamplesCount(c.ptr)
-	return int(i)
+	return c.samplesCount
 }
 
 func (c *CPUProfile) Delete() {

@@ -55,8 +55,50 @@ func (c *CPUProfiler) StopProfiling(title string) *CPUProfile {
 	}
 	tstr := C.CString(title)
 	defer C.free(unsafe.Pointer(tstr))
-	return &CPUProfile{
-		ptr: C.CpuProfilerStopProfiling(c.iso.ptr, c.ptr, tstr),
-		iso: c.iso,
+
+	profilePtr := C.CpuProfilerStopProfiling(c.iso.ptr, c.ptr, tstr)
+
+	samplesCount := C.CpuProfileGetSamplesCount(profilePtr)
+
+	rootPtr := C.CpuProfileGetTopDownRoot(profilePtr)
+
+	rootNode := &CPUProfileNode{
+		functionName: C.GoString(C.CpuProfileNodeGetFunctionName(rootPtr)),
+		lineNumber:   int(C.CpuProfileNodeGetLineNumber(rootPtr)),
+		columnNumber: int(C.CpuProfileNodeGetColumnNumber(rootPtr)),
 	}
+	rootNode.children = getChildren(rootPtr)
+
+	return &CPUProfile{
+		ptr:          profilePtr,
+		iso:          c.iso,
+		title:        title,
+		samplesCount: int(samplesCount),
+		topDownRoot:  rootNode,
+	}
+}
+
+func getChildren(ptr C.CpuProfileNodePtr) []*CPUProfileNode {
+	count := C.CpuProfileNodeGetChildrenCount(ptr)
+	if int(count) == 0 {
+		return []*CPUProfileNode{}
+	}
+
+	node := &CPUProfileNode{
+		children: make([]*CPUProfileNode, count),
+	}
+
+	for i := 0; i < int(count); i++ {
+		childNodePtr := C.CpuProfileNodeGetChild(ptr, C.int(i))
+
+		children := getChildren(childNodePtr)
+
+		node.children[i] = &CPUProfileNode{
+			functionName: C.GoString(C.CpuProfileNodeGetFunctionName(childNodePtr)),
+			lineNumber:   int(C.CpuProfileNodeGetLineNumber(childNodePtr)),
+			columnNumber: int(C.CpuProfileNodeGetColumnNumber(childNodePtr)),
+			children:     children,
+		}
+	}
+	return node.children
 }
