@@ -6,6 +6,7 @@ package v8go_test
 
 import (
 	"testing"
+	"time"
 
 	v8 "rogchap.com/v8go"
 )
@@ -39,8 +40,11 @@ func TestCPUProfile(t *testing.T) {
 
 	cpuProfiler.StartProfiling("cpuprofiletest")
 
-	_, err := ctx.RunScript(`function foo() {}; foo();`, "script.js")
+	_, err := ctx.RunScript(`function foo() {  }; foo();`, "script.js")
 	fatalIf(t, err)
+
+	// Ensure different start/end time
+	time.Sleep(10 * time.Microsecond)
 
 	cpuProfile := cpuProfiler.StopProfiling("cpuprofiletest")
 	if cpuProfile == nil {
@@ -54,5 +58,9 @@ func TestCPUProfile(t *testing.T) {
 
 	if cpuProfile.GetTopDownRoot() == nil {
 		t.Fatal("expected root not to be nil")
+	}
+
+	if cpuProfile.GetStartTime().Equal(cpuProfile.GetEndTime()) {
+		t.Fatal("expected different start and end times")
 	}
 }

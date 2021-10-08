@@ -23,7 +23,7 @@ func TestCPUProfileNode(t *testing.T) {
 
 	cpuProfiler.StartProfiling("cpuprofilenodetest")
 
-	_, _ = ctx.RunScript(profileScript, "")
+	_, _ = ctx.RunScript(profileScript, "script.js")
 	val, _ := ctx.Global().Get("start")
 	fn, _ := val.AsFunction()
 	_, _ = fn.Call(ctx.Global())
@@ -32,17 +32,11 @@ func TestCPUProfileNode(t *testing.T) {
 	defer cpuProfile.Delete()
 
 	node := cpuProfile.GetTopDownRoot()
+	err := checkNode(node, "(root)", 0, 0)
+	fatalIf(t, err)
 
-	if node.GetFunctionName() != "(root)" {
-		t.Fatalf("expected start but got %s", node.GetFunctionName())
-	}
-
-	if node.GetLineNumber() != 0 {
-		t.Fatalf("expected 0 but got %d", node.GetLineNumber())
-	}
-
-	if node.GetColumnNumber() != 0 {
-		t.Fatalf("expected 0 but got %d", node.GetColumnNumber())
+	if node.GetParent() != nil {
+		t.Fatal("expected root node to have nil parent")
 	}
 
 	if node.GetChildrenCount() < 2 {
@@ -51,5 +45,13 @@ func TestCPUProfileNode(t *testing.T) {
 
 	if node.GetChild(1).GetFunctionName() != "start" {
 		t.Fatalf("expected child node with name `start` but got %s", node.GetChild(1).GetFunctionName())
+	}
+
+	if node.GetChild(1).GetScriptResourceName() != "script.js" {
+		t.Fatalf("expected child to have script resource name `script.js` but had `%s`", node.GetScriptResourceName())
+	}
+
+	if node.GetChild(0).GetParent() != node {
+		t.Fatal("expected child's parent to be the same node")
 	}
 }

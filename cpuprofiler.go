@@ -8,6 +8,7 @@ package v8go
 // #include "v8go.h"
 import "C"
 import (
+	"time"
 	"unsafe"
 )
 
@@ -62,41 +63,44 @@ func (c *CPUProfiler) StopProfiling(title string) *CPUProfile {
 
 	rootPtr := C.CpuProfileGetTopDownRoot(profilePtr)
 	rootNode := &CPUProfileNode{
-		functionName: C.GoString(C.CpuProfileNodeGetFunctionName(rootPtr)),
-		lineNumber:   int(C.CpuProfileNodeGetLineNumber(rootPtr)),
-		columnNumber: int(C.CpuProfileNodeGetColumnNumber(rootPtr)),
+		parent:             nil,
+		scriptResourceName: C.GoString(C.CpuProfileNodeGetScriptResourceName(rootPtr)),
+		functionName:       C.GoString(C.CpuProfileNodeGetFunctionName(rootPtr)),
+		lineNumber:         int(C.CpuProfileNodeGetLineNumber(rootPtr)),
+		columnNumber:       int(C.CpuProfileNodeGetColumnNumber(rootPtr)),
 	}
-	rootNode.children = getChildren(rootPtr)
+	rootNode.children = getChildren(rootNode, rootPtr)
 
 	return &CPUProfile{
 		ptr:         profilePtr,
 		iso:         c.iso,
 		title:       title,
 		topDownRoot: rootNode,
+		startTime:   time.Unix(0, int64(C.CpuProfileGetStartTime(profilePtr))/1000),
+		endTime:     time.Unix(0, int64(C.CpuProfileGetEndTime(profilePtr))/1000),
 	}
 }
 
-func getChildren(ptr C.CpuProfileNodePtr) []*CPUProfileNode {
+func getChildren(parent *CPUProfileNode, ptr C.CpuProfileNodePtr) []*CPUProfileNode {
 	count := C.CpuProfileNodeGetChildrenCount(ptr)
 	if int(count) == 0 {
 		return []*CPUProfileNode{}
 	}
 
-	node := &CPUProfileNode{
-		children: make([]*CPUProfileNode, count),
-	}
+	parent.children = make([]*CPUProfileNode, count)
 
 	for i := 0; i < int(count); i++ {
 		childNodePtr := C.CpuProfileNodeGetChild(ptr, C.int(i))
 
-		children := getChildren(childNodePtr)
-
-		node.children[i] = &CPUProfileNode{
-			functionName: C.GoString(C.CpuProfileNodeGetFunctionName(childNodePtr)),
-			lineNumber:   int(C.CpuProfileNodeGetLineNumber(childNodePtr)),
-			columnNumber: int(C.CpuProfileNodeGetColumnNumber(childNodePtr)),
-			children:     children,
+		childNode := &CPUProfileNode{
+			parent:             parent,
+			scriptResourceName: C.GoString(C.CpuProfileNodeGetScriptResourceName(childNodePtr)),
+			functionName:       C.GoString(C.CpuProfileNodeGetFunctionName(childNodePtr)),
+			lineNumber:         int(C.CpuProfileNodeGetLineNumber(childNodePtr)),
+			columnNumber:       int(C.CpuProfileNodeGetColumnNumber(childNodePtr)),
 		}
+		childNode.children = getChildren(childNode, childNodePtr)
+		parent.children[i] = childNode
 	}
-	return node.children
+	return parent.children
 }

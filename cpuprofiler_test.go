@@ -5,6 +5,7 @@
 package v8go_test
 
 import (
+	"fmt"
 	"testing"
 
 	"rogchap.com/v8go"
@@ -34,7 +35,7 @@ func TestCPUProfilerDispose(t *testing.T) {
 }
 
 func TestCPUProfiler(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 
 	ctx := v8go.NewContext(nil)
 	iso := ctx.Isolate()
@@ -61,63 +62,68 @@ func TestCPUProfiler(t *testing.T) {
 	}
 	defer cpuProfile.Delete()
 
-	if cpuProfile.GetTitle() != "cpuprofilertest" {
-		t.Fatalf("expected cpu profile to be %s, but got %s", "cpuprofilertest", cpuProfile.GetTitle())
-	}
-
 	root := cpuProfile.GetTopDownRoot()
 	if root == nil {
 		t.Fatal("expected root not to be nil")
 	}
-	if root.GetFunctionName() != "(root)" {
-		t.Fatalf("expected (root), but got %v", root.GetFunctionName())
-	}
-	checkNode(t, root, "(root)", 0, 0)
-	checkChildren(t, root, []string{"(program)", "start", "(garbage collector)"})
+	err = checkNode(root, "(root)", 0, 0)
+	fatalIf(t, err)
+	err = checkChildren(root, []string{"(program)", "start", "(garbage collector)"})
+	fatalIf(t, err)
 
 	start := root.GetChild(1)
-	checkNode(t, start, "start", 23, 15)
-	checkChildren(t, start, []string{"foo"})
+	err = checkNode(start, "start", 23, 15)
+	fatalIf(t, err)
+	err = checkChildren(start, []string{"foo"})
+	fatalIf(t, err)
 
 	foo := start.GetChild(0)
-	checkNode(t, foo, "foo", 15, 13)
-	checkChildren(t, foo, []string{"delay", "bar", "baz"})
+	err = checkNode(foo, "foo", 15, 13)
+	fatalIf(t, err)
+	err = checkChildren(foo, []string{"delay", "bar", "baz"})
+	fatalIf(t, err)
 
 	baz := foo.GetChild(2)
-	checkNode(t, baz, "baz", 14, 13)
-	checkChildren(t, baz, []string{"delay"})
+	err = checkNode(baz, "baz", 14, 13)
+	fatalIf(t, err)
+	err = checkChildren(baz, []string{"delay"})
+	fatalIf(t, err)
 
 	delay := baz.GetChild(0)
-	checkNode(t, delay, "delay", 12, 15)
-	checkChildren(t, delay, []string{"loop"})
+	err = checkNode(delay, "delay", 12, 15)
+	fatalIf(t, err)
+	err = checkChildren(delay, []string{"loop"})
+	fatalIf(t, err)
 }
 
-func checkChildren(t *testing.T, node *v8go.CPUProfileNode, names []string) {
+func checkChildren(node *v8go.CPUProfileNode, names []string) error {
 	nodeName := node.GetFunctionName()
 	if node.GetChildrenCount() != len(names) {
 		present := []string{}
 		for i := 0; i < node.GetChildrenCount(); i++ {
 			present = append(present, node.GetChild(i).GetFunctionName())
 		}
-		t.Fatalf("child count for node %s should be %d but was %d: %v", nodeName, len(names), node.GetChildrenCount(), present)
+		return fmt.Errorf("child count for node %s should be %d but was %d: %v", nodeName, len(names), node.GetChildrenCount(), present)
 	}
 	for i, n := range names {
 		if node.GetChild(i).GetFunctionName() != n {
-			t.Fatalf("expected %s child %d to have name %s", nodeName, i, n)
+			return fmt.Errorf("expected %s child %d to have name %s", nodeName, i, n)
 		}
 	}
+	return nil
 }
 
-func checkNode(t *testing.T, node *v8go.CPUProfileNode, name string, line, column int) {
+func checkNode(node *v8go.CPUProfileNode, name string, line, column int) error {
 	if node.GetFunctionName() != name {
-		t.Fatalf("expected node to have function name `%s` but had `%s`", name, node.GetFunctionName())
+		return fmt.Errorf("expected node to have function name `%s` but had `%s`", name, node.GetFunctionName())
 	}
 	if node.GetLineNumber() != line {
-		t.Fatalf("expected node %s at line %d, but got %d", name, line, node.GetLineNumber())
+		return fmt.Errorf("expected node %s at line %d, but got %d", name, line, node.GetLineNumber())
 	}
 	if node.GetColumnNumber() != column {
-		t.Fatalf("expected node %s at column %d, but got %d", name, column, node.GetColumnNumber())
+		return fmt.Errorf("expected node %s at column %d, but got %d", name, column, node.GetColumnNumber())
 	}
+	return nil
 }
 
 // const profileTree = `

@@ -91,17 +91,18 @@ extern void CpuProfilerStartProfiling(IsolatePtr iso_ptr,
 extern CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr,
                                               CpuProfilerPtr ptr,
                                               const char* title);
-/* extern const char* CpuProfileGetTitle(IsolatePtr iso_ptr, CpuProfilePtr ptr); */
+extern int CpuProfileGetStartTime(CpuProfilePtr ptr);
+extern int CpuProfileGetEndTime(CpuProfilePtr ptr);
 extern int CpuProfileGetSamplesCount(CpuProfilePtr ptr);
 extern void CpuProfileDelete(CpuProfilePtr ptr);
 
 extern CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr ptr);
 
+extern const char* CpuProfileNodeGetScriptResourceName(CpuProfileNodePtr ptr);
 extern const char* CpuProfileNodeGetFunctionName(CpuProfileNodePtr ptr);
 extern int CpuProfileNodeGetChildrenCount(CpuProfileNodePtr ptr);
 extern CpuProfileNodePtr CpuProfileNodeGetChild(CpuProfileNodePtr ptr,
                                                 int index);
-/* extern CpuProfileNodePtr CpuProfileNodeGetParent(CpuProfileNodePtr ptr); */
 extern int CpuProfileNodeGetLineNumber(CpuProfileNodePtr ptr);
 extern int CpuProfileNodeGetColumnNumber(CpuProfileNodePtr ptr);
 

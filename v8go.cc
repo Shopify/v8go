@@ -58,6 +58,7 @@ struct m_cpuProfile {
 struct m_cpuProfileNode {
   const CpuProfileNode* ptr;
   const char* functionName;
+  const char* scriptResourceName;
   int lineNumber;
   int columnNumber;
   int childrenCount;
@@ -272,6 +273,7 @@ CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr, CpuProfilerPtr cpuPro
   m_cpuProfileNode* root = new m_cpuProfileNode;
   root->ptr = r;
   root->childrenCount = r->GetChildrenCount();
+  root->scriptResourceName = r->GetScriptResourceNameStr();
   root->functionName = r->GetFunctionNameStr();
   root->lineNumber = r->GetLineNumber();
   root->columnNumber = r->GetColumnNumber();
@@ -287,8 +289,20 @@ CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr ptr) {
   return ptr->root;
 }
 
+int CpuProfileGetStartTime(CpuProfilePtr cpuProfilePtr) {
+  return cpuProfilePtr->ptr->GetStartTime();
+}
+
+int CpuProfileGetEndTime(CpuProfilePtr cpuProfilePtr) {
+  return cpuProfilePtr->ptr->GetEndTime();
+}
+
 int CpuProfileNodeGetChildrenCount(CpuProfileNodePtr ptr) {
   return ptr->childrenCount;
+}
+
+const char* CpuProfileNodeGetScriptResourceName(CpuProfileNodePtr ptr) {
+  return ptr->scriptResourceName;
 }
 
 const char* CpuProfileNodeGetFunctionName(CpuProfileNodePtr ptr) {
@@ -307,6 +321,7 @@ CpuProfileNodePtr CpuProfileNodeGetChild(CpuProfileNodePtr cpuProfileNode, int i
   const CpuProfileNode* child = cpuProfileNode->ptr->GetChild(index);
   m_cpuProfileNode* c = new m_cpuProfileNode;
   c->ptr = child;
+  c->scriptResourceName = child->GetScriptResourceNameStr();
   c->functionName = child->GetFunctionNameStr();
   c->lineNumber = child->GetLineNumber();
   c->columnNumber = child->GetColumnNumber();

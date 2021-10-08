@@ -10,15 +10,13 @@ import "C"
 
 // CPUProfileNode represents a node in a call graph.
 type CPUProfileNode struct {
-	functionName string
-	lineNumber   int
-	columnNumber int
-	children     []*CPUProfileNode
-}
+	scriptResourceName string
+	functionName       string
+	lineNumber         int
+	columnNumber       int
 
-// Returns function name (empty string for anonymous functions.)
-func (c *CPUProfileNode) GetFunctionName() string {
-	return c.functionName
+	parent   *CPUProfileNode
+	children []*CPUProfileNode
 }
 
 // Retrieves number of children.
@@ -32,6 +30,19 @@ func (c *CPUProfileNode) GetChild(index int) *CPUProfileNode {
 		return nil
 	}
 	return c.children[index]
+}
+
+func (c *CPUProfileNode) GetParent() *CPUProfileNode {
+	return c.parent
+}
+
+func (c *CPUProfileNode) GetScriptResourceName() string {
+	return c.scriptResourceName
+}
+
+// Returns function name (empty string for anonymous functions.)
+func (c *CPUProfileNode) GetFunctionName() string {
+	return c.functionName
 }
 
 // Returns the number, 1-based, of the line where the function originates.
