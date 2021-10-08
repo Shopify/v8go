@@ -13,17 +13,7 @@ type CPUProfileNode struct {
 	functionName string
 	lineNumber   int
 	columnNumber int
-
-	children []*CPUProfileNode
-}
-
-func NewCPUProfileNode(functionName string, lineNumber int, columnNumber int, children []*CPUProfileNode) *CPUProfileNode {
-	return &CPUProfileNode{
-		functionName: functionName,
-		lineNumber:   lineNumber,
-		columnNumber: columnNumber,
-		children:     children,
-	}
+	children     []*CPUProfileNode
 }
 
 // Returns function name (empty string for anonymous functions.)

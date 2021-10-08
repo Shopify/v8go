@@ -19,7 +19,7 @@ func TestCPUProfile_Dispose(t *testing.T) {
 	cpuProfiler := v8.NewCPUProfiler(iso)
 	defer cpuProfiler.Dispose()
 
-	cpuProfiler.StartProfiling("cpuprofiledispose", false)
+	cpuProfiler.StartProfiling("cpuprofiledispose")
 	cpuProfile := cpuProfiler.StopProfiling("cpuprofiledispose")
 	cpuProfile.Delete()
 	// noop when called multiple times
@@ -37,15 +37,9 @@ func TestCPUProfile(t *testing.T) {
 	cpuProfiler := v8.NewCPUProfiler(iso)
 	defer cpuProfiler.Dispose()
 
-	cpuProfiler.StartProfiling("cpuprofiletest", true)
+	cpuProfiler.StartProfiling("cpuprofiletest")
 
-	_, err := ctx.RunScript(profileScript, "script.js")
-	fatalIf(t, err)
-	val, err := ctx.Global().Get("start")
-	fatalIf(t, err)
-	fn, err := val.AsFunction()
-	fatalIf(t, err)
-	_, err = fn.Call(ctx.Global())
+	_, err := ctx.RunScript(`function foo() {}; foo();`, "script.js")
 	fatalIf(t, err)
 
 	cpuProfile := cpuProfiler.StopProfiling("cpuprofiletest")
@@ -57,10 +51,6 @@ func TestCPUProfile(t *testing.T) {
 	if cpuProfile.GetTitle() != "cpuprofiletest" {
 		t.Errorf("expected cpuprofiletest, but got %v", cpuProfile.GetTitle())
 	}
-
-	// if cpuProfile.GetSamplesCount() == 0 {
-	// 	t.Errorf("expected samples count greater than 0")
-	// }
 
 	if cpuProfile.GetTopDownRoot() == nil {
 		t.Fatal("expected root not to be nil")

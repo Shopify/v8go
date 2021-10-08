@@ -35,10 +35,12 @@ func (c *CPUProfiler) Dispose() {
 
 // StartProfiling starts collecting a CPU profile. Title may be an empty string. Several
 // profiles may be collected at once. Attempts to start collecting several
-// profiles with the same title are silently ignored. recordSamples parameter
-// controls whether individual samples should be recorded in addition to the
-// aggregated tree.
-func (c *CPUProfiler) StartProfiling(title string, recordSamples bool) {
+// profiles with the same title are silently ignored.
+// TODO: Return CPUProfilingStats
+// Enum for returning profiling status. Once StartProfiling is called,
+// we want to return to clients whether the profiling was able to start
+// correctly, or return a descriptive error.
+func (c *CPUProfiler) StartProfiling(title string) {
 	if c.ptr == nil || c.iso.ptr == nil {
 		return
 	}
@@ -58,10 +60,7 @@ func (c *CPUProfiler) StopProfiling(title string) *CPUProfile {
 
 	profilePtr := C.CpuProfilerStopProfiling(c.iso.ptr, c.ptr, tstr)
 
-	samplesCount := C.CpuProfileGetSamplesCount(profilePtr)
-
 	rootPtr := C.CpuProfileGetTopDownRoot(profilePtr)
-
 	rootNode := &CPUProfileNode{
 		functionName: C.GoString(C.CpuProfileNodeGetFunctionName(rootPtr)),
 		lineNumber:   int(C.CpuProfileNodeGetLineNumber(rootPtr)),
@@ -70,11 +69,10 @@ func (c *CPUProfiler) StopProfiling(title string) *CPUProfile {
 	rootNode.children = getChildren(rootPtr)
 
 	return &CPUProfile{
-		ptr:          profilePtr,
-		iso:          c.iso,
-		title:        title,
-		samplesCount: int(samplesCount),
-		topDownRoot:  rootNode,
+		ptr:         profilePtr,
+		iso:         c.iso,
+		title:       title,
+		topDownRoot: rootNode,
 	}
 }
 

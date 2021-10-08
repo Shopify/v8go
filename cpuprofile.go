@@ -14,9 +14,7 @@ type CPUProfile struct {
 	ptr C.CpuProfilePtr
 	iso *Isolate
 
-	title        string
-	samplesCount int
-
+	title       string
 	topDownRoot *CPUProfileNode
 }
 
@@ -28,12 +26,6 @@ func (c *CPUProfile) GetTopDownRoot() *CPUProfileNode {
 // Returns CPU profile title.
 func (c *CPUProfile) GetTitle() string {
 	return c.title
-}
-
-// Returns number of samples recorded. The samples are not recorded unless
-// recordSamples parameter of CpuProfiler.StartCpuProfiling is true.
-func (c *CPUProfile) GetSamplesCount() int {
-	return c.samplesCount
 }
 
 func (c *CPUProfile) Delete() {

@@ -52,7 +52,6 @@ struct m_cpuProfiler {
 struct m_cpuProfile {
   CpuProfile* ptr;
   const char* title;
-  int samplesCount;
   m_cpuProfileNode* root;
 };
 
@@ -269,8 +268,6 @@ CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr, CpuProfilerPtr cpuPro
 
   CpuProfile* cpuProfile = cpuProfiler->ptr->StopProfiling(title_str);
 
-  int samplesCount = cpuProfile->GetSamplesCount();
-
   const CpuProfileNode* r = cpuProfile->GetTopDownRoot();
   m_cpuProfileNode* root = new m_cpuProfileNode;
   root->ptr = r;
@@ -282,17 +279,12 @@ CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr, CpuProfilerPtr cpuPro
   m_cpuProfile* c = new m_cpuProfile;
   c->ptr = cpuProfile;
   c->title = title;
-  c->samplesCount = samplesCount;
   c->root = root;
   return c;
 }
 
 CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr ptr) {
   return ptr->root;
-}
-
-int CpuProfileGetSamplesCount(CpuProfilePtr ptr) {
-  return ptr->samplesCount;
 }
 
 int CpuProfileNodeGetChildrenCount(CpuProfileNodePtr ptr) {

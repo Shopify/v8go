@@ -22,14 +22,14 @@ func TestCPUProfilerDispose(t *testing.T) {
 	cpuProfiler.Dispose()
 
 	// verify does not panic once disposed
-	cpuProfiler.StartProfiling("", false)
+	cpuProfiler.StartProfiling("")
 	cpuProfiler.StopProfiling("")
 
 	cpuProfiler = v8go.NewCPUProfiler(iso)
 	defer cpuProfiler.Dispose()
 	iso.Dispose()
 	// verify does not panic once isolate disposed
-	cpuProfiler.StartProfiling("", false)
+	cpuProfiler.StartProfiling("")
 	cpuProfiler.StopProfiling("")
 }
 
@@ -44,7 +44,7 @@ func TestCPUProfiler(t *testing.T) {
 	cpuProfiler := v8go.NewCPUProfiler(iso)
 	defer cpuProfiler.Dispose()
 
-	cpuProfiler.StartProfiling("cpuprofilertest", true)
+	cpuProfiler.StartProfiling("cpuprofilertest")
 
 	_, err := ctx.RunScript(profileScript, "script.js")
 	fatalIf(t, err)
@@ -55,8 +55,6 @@ func TestCPUProfiler(t *testing.T) {
 	_, err = fn.Call(ctx.Global())
 	fatalIf(t, err)
 
-	// time.Sleep(100 * time.Millisecond)
-
 	cpuProfile := cpuProfiler.StopProfiling("cpuprofilertest")
 	if cpuProfile == nil {
 		t.Fatal("expected profiler not to be nil")
@@ -66,9 +64,6 @@ func TestCPUProfiler(t *testing.T) {
 	if cpuProfile.GetTitle() != "cpuprofilertest" {
 		t.Fatalf("expected cpu profile to be %s, but got %s", "cpuprofilertest", cpuProfile.GetTitle())
 	}
-	// if cpuProfile.GetSamplesCount() == 0 {
-	// 	t.Fatalf("expected cpu profile to have samples count greater than 0, but got %d", cpuProfile.GetSamplesCount())
-	// }
 
 	root := cpuProfile.GetTopDownRoot()
 	if root == nil {

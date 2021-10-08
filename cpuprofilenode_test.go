@@ -13,26 +13,43 @@ import (
 func TestCPUProfileNode(t *testing.T) {
 	t.Parallel()
 
-	child := v8.NewCPUProfileNode("child", 5, 6, []*v8.CPUProfileNode{})
-	node := v8.NewCPUProfileNode("start", 1, 2, []*v8.CPUProfileNode{child})
+	ctx := v8.NewContext(nil)
+	iso := ctx.Isolate()
+	defer iso.Dispose()
+	defer ctx.Close()
 
-	if node.GetFunctionName() != "start" {
+	cpuProfiler := v8.NewCPUProfiler(iso)
+	defer cpuProfiler.Dispose()
+
+	cpuProfiler.StartProfiling("cpuprofilenodetest")
+
+	_, _ = ctx.RunScript(profileScript, "")
+	val, _ := ctx.Global().Get("start")
+	fn, _ := val.AsFunction()
+	_, _ = fn.Call(ctx.Global())
+
+	cpuProfile := cpuProfiler.StopProfiling("cpuprofilenodetest")
+	defer cpuProfile.Delete()
+
+	node := cpuProfile.GetTopDownRoot()
+
+	if node.GetFunctionName() != "(root)" {
 		t.Fatalf("expected start but got %s", node.GetFunctionName())
 	}
 
-	if node.GetLineNumber() != 1 {
-		t.Fatalf("expected 1 but got %d", node.GetLineNumber())
+	if node.GetLineNumber() != 0 {
+		t.Fatalf("expected 0 but got %d", node.GetLineNumber())
 	}
 
-	if node.GetColumnNumber() != 2 {
-		t.Fatalf("expected 2 but got %d", node.GetColumnNumber())
+	if node.GetColumnNumber() != 0 {
+		t.Fatalf("expected 0 but got %d", node.GetColumnNumber())
 	}
 
-	if node.GetChildrenCount() != 1 {
-		t.Fatalf("expected 1 but got %d", node.GetChildrenCount())
+	if node.GetChildrenCount() < 2 {
+		t.Fatalf("expected at least 2 children, but got %d", node.GetChildrenCount())
 	}
 
-	if node.GetChild(0) != child {
-		t.Fatalf("expected child but got %v", node.GetChild(0))
+	if node.GetChild(1).GetFunctionName() != "start" {
+		t.Fatalf("expected child node with name `start` but got %s", node.GetChild(1).GetFunctionName())
 	}
 }
