@@ -151,10 +151,6 @@ extern "C" {
   Isolate::Scope isolate_scope(iso); \
   HandleScope handle_scope(iso);
 
-#define ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr) \
-  ISOLATE_SCOPE(iso_ptr);                       \
-  m_ctx* ctx = static_cast<m_ctx*>(iso->GetData(0));
-
 void Init() {
 #ifdef _WIN32
   V8::InitializeExternalStartupData(".");
@@ -668,9 +664,9 @@ ValuePtr ContextGlobal(ContextPtr ctx) {
   Context::Scope context_scope(local_ctx); \
   Local<Value> value = val->ptr.Get(iso);
 
-#define ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr) \
-  ISOLATE_SCOPE(iso_ptr);                       \
-  m_ctx* ctx = static_cast<m_ctx*>(iso->GetData(0));
+#define ISOLATE_SCOPE_INTERNAL_CONTEXT(iso) \
+  ISOLATE_SCOPE(iso);                       \
+  m_ctx* ctx = isolateInternalContext(iso);
 
 ValuePtr NewValueInteger(IsolatePtr iso, int32_t v) {
   ISOLATE_SCOPE_INTERNAL_CONTEXT(iso);
