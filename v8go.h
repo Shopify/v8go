@@ -114,7 +114,9 @@ extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
 extern CPUProfiler* NewCPUProfiler(IsolatePtr iso_ptr);
 extern void CPUProfilerDispose(CPUProfiler* ptr);
+extern void CPUProfilerSetSamplingInterval(CPUProfiler* ptr, int us);
 extern void CPUProfilerStartProfiling(CPUProfiler* ptr, const char* title);
+extern void CPUProfilerCollectSample(CPUProfiler* ptr);
 extern CPUProfile* CPUProfilerStopProfiling(CPUProfiler* ptr, const char* title);
 extern void CPUProfileDelete(CPUProfile* ptr);
 
