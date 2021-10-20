@@ -242,6 +242,14 @@ void CPUProfilerStartProfiling(CPUProfiler* profiler, const char* title) {
   profiler->ptr->StartProfiling(title_str);
 }
 
+void CPUProfilerCollectSample(CPUProfiler* profiler) {
+  profiler->ptr->CollectSample(profiler->iso);
+}
+
+void CPUProfilerSetSamplingInterval(CPUProfiler* profiler, int us) {
+  profiler->ptr->SetSamplingInterval(us);
+}
+
 CPUProfileNode* NewCPUProfileNode(const CpuProfileNode* ptr_) {
   int count = ptr_->GetChildrenCount();
   CPUProfileNode** children = new CPUProfileNode*[count];
