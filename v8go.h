@@ -8,15 +8,25 @@
 
 namespace v8 {
 class Isolate;
+class UnboundScript;
+class Script;
 }
 
 typedef v8::Isolate* IsolatePtr;
+typedef v8::UnboundScript* UnboundScriptPtr;
+typedef v8::Script* ScriptPtr;
 
 extern "C" {
 #else
 // Opaque to cgo, but useful to treat it as a pointer to a distinct type
 typedef struct v8Isolate v8Isolate;
 typedef v8Isolate* IsolatePtr;
+
+typedef struct v8Script v8Script;
+typedef v8Script* ScriptPtr;
+
+typedef struct v8UnboundScript v8UnboundScript;
+typedef v8UnboundScript* UnboundScriptPtr;
 #endif
 
 #include <stddef.h>
@@ -29,11 +39,6 @@ typedef struct m_template m_template;
 typedef m_ctx* ContextPtr;
 typedef m_value* ValuePtr;
 typedef m_template* TemplatePtr;
-
-typedef struct {
-  const uint8_t* data;
-  int length;
-} ScriptCompilerCachedData;
 
 typedef struct {
   const char* msg;
@@ -50,6 +55,16 @@ typedef struct {
   const char* string;
   RtnError error;
 } RtnString;
+
+typedef struct {
+  ScriptPtr ptr;
+  RtnError error;
+} RtnScript;
+
+typedef struct {
+  UnboundScriptPtr ptr;
+  RtnError error;
+} RtnUnboundScript;
 
 typedef struct {
   size_t total_heap_size;
@@ -79,14 +94,11 @@ extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
-extern ScriptCompilerCachedData CompileScript(IsolatePtr iso_ptr,
-                                              const char* s,
-                                              const char* origin);
-extern RtnValue RunCompiledScript(ContextPtr ctx_ptr,
-                                  const char* source,
-                                  const uint8_t* data,
-                                  int data_length,
-                                  const char* origin);
+extern RtnUnboundScript CompileUnboundScript(IsolatePtr iso,
+                                          const char* s,
+                                          const char* origin);
+extern RtnScript UnboundScriptBindToCurrentContext(ContextPtr ctx_ptr, UnboundScriptPtr unboundScipt);
+extern RtnValue ScriptRun(ContextPtr ctx_ptr, ScriptPtr script);
 
 extern ContextPtr NewContext(IsolatePtr iso_ptr,
                              TemplatePtr global_template_ptr,

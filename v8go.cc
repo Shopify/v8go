@@ -134,6 +134,15 @@ extern "C" {
   ISOLATE_SCOPE(iso);                       \
   m_ctx* ctx = isolateInternalContext(iso);
 
+#define LOCAL_CONTEXT(ctx)                      \
+  Isolate* iso = ctx->iso;                      \
+  Locker locker(iso);                           \
+  Isolate::Scope isolate_scope(iso);            \
+  HandleScope handle_scope(iso);                \
+  TryCatch try_catch(iso);                      \
+  Local<Context> local_ctx = ctx->ptr.Get(iso); \
+  Context::Scope context_scope(local_ctx);
+
 void Init() {
 #ifdef _WIN32
   V8::InitializeExternalStartupData(".");
@@ -208,11 +217,10 @@ IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr iso) {
                             hs.number_of_detached_contexts()};
 }
 
-// TODO: It would be great if we could check that the script was already compiled
-// and return that from the v8 hashtable instead
-ScriptCompilerCachedData CompileScript(IsolatePtr iso, const char* s, const char* o) {
+RtnUnboundScript CompileUnboundScript(IsolatePtr iso, const char* s, const char* o) {
   ISOLATE_SCOPE_INTERNAL_CONTEXT(iso);
-  Context::Scope context_scope(ctx->ptr.Get(iso));
+
+  RtnUnboundScript rtn = {nullptr, nullptr};
 
   Local<String> src =
       String::NewFromUtf8(iso, s, NewStringType::kNormal).ToLocalChecked();
@@ -223,17 +231,53 @@ ScriptCompilerCachedData CompileScript(IsolatePtr iso, const char* s, const char
 
   ScriptCompiler::Source source(src, script_origin);
 
-  Local<UnboundScript> unboundedScript = ScriptCompiler::CompileUnboundScript(
+  // TODO: Support compile options as argument for kEagerCompile
+  Local<UnboundScript> unboundScript;
+  if (!ScriptCompiler::CompileUnboundScript(
       iso,
       &source,
-      ScriptCompiler::CompileOptions::kEagerCompile).ToLocalChecked();
+      ScriptCompiler::CompileOptions::kNoCompileOptions).ToLocal(&unboundScript)) {
+    // TODO: ExceptionError wants a local context
+    RtnError rtnErr = {nullptr, nullptr, nullptr};
+    rtnErr.msg = CopyString("this failed");
+    rtn.error = rtnErr;
+    return rtn;
+  }
 
-  ScriptCompiler::CachedData* cachedData = ScriptCompiler::CreateCodeCache(unboundedScript);
+  // TODO: this is not real
+  UnboundScript* us = &unboundScript;
+  rtn.ptr = us;
+  return rtn;
+}
 
-  return ScriptCompilerCachedData{
-    cachedData->data,
-    cachedData->length,
-  };
+RtnScript UnboundScriptBindToCurrentContext(ContextPtr ctx, UnboundScriptPtr unboundScript) {
+  LOCAL_CONTEXT(ctx);
+
+  RtnScript rtn = {nullptr, nullptr};
+
+  // TODO: this is not real
+  Local<Script> script = unboundScript->BindToCurrentContext();
+  rtn.ptr = script;
+  return rtn;
+}
+
+RtnValue ScriptRun(ContextPtr ctx, ScriptPtr script) {
+  LOCAL_CONTEXT(ctx);
+
+  RtnValue rtn = {nullptr, nullptr};
+
+  Local<Value> result;
+  if (!script->Run(local_ctx).ToLocal(&result)) {
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
+    return rtn;
+  }
+  m_value* val = new m_value;
+  val->iso = iso;
+  val->ctx = ctx;
+  val->ptr = Persistent<Value, CopyablePersistentTraits<Value>>(iso, result);
+
+  rtn.value = tracked_value(ctx, val);
+  return rtn;
 }
 
 /********** Template **********/
@@ -395,15 +439,6 @@ RtnValue FunctionTemplateGetFunction(TemplatePtr ptr, ContextPtr ctx) {
 }
 
 /********** Context **********/
-
-#define LOCAL_CONTEXT(ctx)                      \
-  Isolate* iso = ctx->iso;                      \
-  Locker locker(iso);                           \
-  Isolate::Scope isolate_scope(iso);            \
-  HandleScope handle_scope(iso);                \
-  TryCatch try_catch(iso);                      \
-  Local<Context> local_ctx = ctx->ptr.Get(iso); \
-  Context::Scope context_scope(local_ctx);
 
 ContextPtr NewContext(IsolatePtr iso,
                       TemplatePtr global_template_ptr,

@@ -59,39 +59,30 @@ func TestIsolateTermination(t *testing.T) {
 
 func TestIsolateCompileScript(t *testing.T) {
 	s := "function foo() { return 'bar'; }; foo()"
-	// s := ""
 
 	i1 := v8.NewIsolate()
 	defer i1.Dispose()
-	c1 := v8.NewContext(i1)
-	defer c1.Close()
 
 	i2 := v8.NewIsolate()
 	defer i2.Dispose()
 	c2 := v8.NewContext(i2)
 	defer c2.Close()
 
-	d1 := i1.CompileScript(s, "script.js")
-
-	// TODO: Measure compilation time VS run time
-	// TODO: Validate compilation is actually being used vs directly running source script
-
-	val, err := c2.RunCompiledScript(s, d1, "script.js")
+	unbound, err := i1.CompileUnboundScript(s, "script.js")
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
+	}
+	script, err := unbound.BindToCurrentContext(c2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	val, err := script.Run(c2)
+	if err != nil {
+		t.Fatal(err)
 	}
 	if val.String() != "bar" {
-		t.Fatalf("invalid value returned, expected bar got %v", val)
+		t.Fatal("wrong")
 	}
-
-	// TODO: compare isolate heap statistics between compiling isolate and running isolate?
-	// if i1.GetHeapStatistics() != i2.GetHeapStatistics() {
-	// 	heapStats := i1.GetHeapStatistics()
-	// 	fmt.Printf("i1:  TotalPhysicalSize:%d TotalAvailableSize:%d UsedHeapSize:%d \n", heapStats.TotalPhysicalSize, heapStats.TotalAvailableSize, heapStats.UsedHeapSize)
-	// 	heapStats = i2.GetHeapStatistics()
-	// 	fmt.Printf("i2:  TotalPhysicalSize:%d TotalAvailableSize:%d UsedHeapSize:%d \n", heapStats.TotalPhysicalSize, heapStats.TotalAvailableSize, heapStats.UsedHeapSize)
-	// 	t.Fatal("heap statistics are not the same between isolates")
-	// }
 }
 
 func TestIsolateGetHeapStatistics(t *testing.T) {

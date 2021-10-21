@@ -79,19 +79,45 @@ func (i *Isolate) IsExecutionTerminating() bool {
 
 type ScriptCompilerCachedData []byte
 
-//TODO
-// CompileScript will compile the specified script (context-independent).
-func (i *Isolate) CompileScript(source, origin string) ScriptCompilerCachedData {
+type UnboundScript struct {
+	ptr C.UnboundScriptPtr
+}
+
+type Script struct {
+	ptr C.ScriptPtr
+	// This would mean the Script.Run function could omit the ctx arg
+	// ctx *Context
+}
+
+func (i *Isolate) CompileUnboundScript(source, origin string) (*UnboundScript, error) {
 	cSource := C.CString(source)
 	cOrigin := C.CString(origin)
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
-
-	p := C.CompileScript(i.ptr, cSource, cOrigin)
-	if p.length < 1 {
-		return nil
+	rtn := C.CompileUnboundScript(i.ptr, cSource, cOrigin)
+	if rtn.ptr == nil {
+		return nil, newJSError(rtn.error)
 	}
-	return []byte(C.GoBytes(unsafe.Pointer(p.data), p.length))
+	return &UnboundScript{ptr: rtn.ptr}, nil
+}
+
+func (s *UnboundScript) BindToCurrentContext(ctx *Context) (*Script, error) {
+	rtn := C.UnboundScriptBindToCurrentContext(ctx.ptr, s.ptr)
+	if rtn.ptr == nil {
+		return nil, newJSError(rtn.error)
+	}
+	return &Script{ptr: rtn.ptr}, nil
+}
+
+// TODO: If we expose BindToCurrentContext, we may just want to store
+// the ctx on the Script resource for use here and not match the v8 api
+// where Run accepts a context, and just use the recorded one.
+// Alternatively, if we skip BindToCurrentContext being explicit, then
+// we can do it internally as part of RunUnboundScript(ctx) and not expose
+// the Script type?
+func (s *Script) Run(ctx *Context) (*Value, error) {
+	rtn := C.ScriptRun(ctx.ptr, s.ptr)
+	return valueResult(ctx, rtn)
 }
 
 // GetHeapStatistics returns heap statistics for an isolate.
