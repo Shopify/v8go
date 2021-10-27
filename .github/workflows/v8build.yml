@@ -29,6 +29,12 @@ jobs:
               if: matrix.platform == 'windows-latest'
               run: echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
               shell: bash
+            - uses: actions/setup-python@v2
+              if: matrix.platform == 'windows-latest'
+              with:
+                python-version: '2.7'
+            - name: Display Python version
+              run: python -c "import sys; print(sys.version)"
             - name: Build V8 windows
               if: matrix.platform == 'windows-latest'
               run: cd deps; python build.py --no-clang
