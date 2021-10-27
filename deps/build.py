@@ -52,6 +52,7 @@ treat_warnings_as_errors=false
 v8_embedder_string="-v8go"
 v8_enable_gdbjit=false
 v8_enable_test_features=false
+icu_use_data_file = false
 v8_untrusted_code_mitigations=false
 exclude_unwind_tables=true
 """
