@@ -36,7 +36,7 @@ jobs:
                 python-version: '2.x'
             - name: Build V8 windows
               if: matrix.platform == 'windows-latest'
-              run: cd deps; python build.py --no-clang
+              run: cd deps; python -m build.py --no-clang
               env:
                 MSYSTEM: MINGW64
                 DEPOT_TOOLS_WIN_TOOLCHAIN: 0
