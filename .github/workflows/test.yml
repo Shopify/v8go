@@ -12,10 +12,14 @@ jobs:
     name: Tests on ${{ matrix.go-version }} ${{ matrix.platform }}
     strategy:
       matrix:
-        go-version: [1.12.17, 1.16.4]
-        platform: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: [1.16.8, 1.17.1]
+        # We use macos-11 over macos-latest because macos-latest defaults to Catalina(10.15) and not Big Sur(11.0)
+        # We can switch to macos-latest whenever Big Sur becomes the default
+        # See https://github.com/actions/virtual-environments#available-environments
+        # platform: [ubuntu-latest, macos-11, windows-latest]
+        platform: [ubuntu-latest, macos-11]
     runs-on: ${{ matrix.platform }}
-    
+
     steps:
     - name: Install Go
       uses: actions/setup-go@v2
@@ -23,10 +27,10 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout
       uses: actions/checkout@v2
-    - name: Add MINGW to PATH
-      if: matrix.platform == 'windows-latest'
-      run: echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
-      shell: bash
+    # - name: Add MINGW to PATH
+    #   if: matrix.platform == 'windows-latest'
+    #   run: echo "C:\msys64\mingw64\bin" >> $GITHUB_PATH
+    #   shell: bash
     - name: Go Test
       run: go test -v -coverprofile c.out ./...
     - name: Upload coverage to Codecov
