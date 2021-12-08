@@ -87,8 +87,8 @@ def os_arch():
     return u[0].lower() + "_" + args.arch
 
 def v8_arch():
-    # if args.arch == "x86_64":
-    #     return "x64"
+    if args.arch == "x86_64":
+        return "x64"
     return args.arch
 
 def apply_mingw_patches():
