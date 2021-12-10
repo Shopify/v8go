@@ -64,6 +64,24 @@ func NewIsolate() *Isolate {
 	return iso
 }
 
+type CreateParams struct {
+	SnapshotBlob *StartupData
+}
+
+func NewIsolateWithCreateParams(params CreateParams) *Isolate {
+	v8once.Do(func() {
+		C.Init()
+	})
+	iso := &Isolate{
+		ptr: C.NewIsolateWithCreateParams(params.SnapshotBlob.ptr),
+		cbs: make(map[int]FunctionCallback),
+	}
+	iso.null = newValueNull(iso)
+	iso.undefined = newValueUndefined(iso)
+	return iso
+
+}
+
 // TerminateExecution terminates forcefully the current thread
 // of JavaScript execution in the given isolate.
 func (i *Isolate) TerminateExecution() {

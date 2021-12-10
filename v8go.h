@@ -11,16 +11,24 @@
 #include "v8.h"
 
 typedef v8::Isolate* IsolatePtr;
+typedef v8::StartupData* StartupDataPtr;
 typedef v8::CpuProfiler* CpuProfilerPtr;
 typedef v8::CpuProfile* CpuProfilePtr;
 typedef const v8::CpuProfileNode* CpuProfileNodePtr;
 typedef v8::ScriptCompiler::CachedData* ScriptCompilerCachedDataPtr;
+typedef v8::SnapshotCreator* SnapshotCreatorPtr;
 
 extern "C" {
 #else
 // Opaque to cgo, but useful to treat it as a pointer to a distinct type
 typedef struct v8Isolate v8Isolate;
 typedef v8Isolate* IsolatePtr;
+
+typedef struct v8SnapshotCreator v8SnapshotCreator;
+typedef v8SnapshotCreator* SnapshotCreatorPtr;
+
+typedef struct v8StartupData v8StartupData;
+typedef v8StartupData* StartupDataPtr;
 
 typedef struct v8CpuProfiler v8CpuProfiler;
 typedef v8CpuProfiler* CpuProfilerPtr;
@@ -130,13 +138,21 @@ typedef struct {
   int sign_bit;
 } ValueBigInt;
 
+typedef struct {
+  StartupDataPtr startup_data;
+} IsolateCreateParams;
+
 extern void Init();
 extern IsolatePtr NewIsolate();
+extern IsolatePtr NewIsolateWithCreateParams(StartupDataPtr ptr);
 extern void IsolatePerformMicrotaskCheckpoint(IsolatePtr ptr);
 extern void IsolateDispose(IsolatePtr ptr);
 extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
+
+extern SnapshotCreatorPtr NewSnapshotCreator();
+extern StartupDataPtr SnapshotCreatorCreateBlob(SnapshotCreatorPtr sc);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 

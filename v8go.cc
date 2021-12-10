@@ -132,6 +132,22 @@ m_unboundScript* tracked_unbound_script(m_ctx* ctx, m_unboundScript* us) {
 
 extern "C" {
 
+/********** SnapshotCreator **********/
+
+SnapshotCreator* NewSnapshotCreator() {
+  v8::SnapshotCreator snapshot_creator;
+  SnapshotCreator* sc = new SnapshotCreator;
+  sc = &snapshot_creator;
+  return sc;
+}
+
+StartupData* SnapshotCreatorCreateBlob(SnapshotCreator* sc) {
+  v8::StartupData blob = sc->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kClear);
+  StartupData* sd = new StartupData;
+  sd = &blob;
+  return sd;
+}
+
 /********** Isolate **********/
 
 #define ISOLATE_SCOPE(iso)           \
@@ -150,6 +166,26 @@ void Init() {
   V8::InitializePlatform(default_platform.get());
   V8::Initialize();
   return;
+}
+
+IsolatePtr NewIsolateWithCreateParams(StartupDataPtr startup_data) {
+  Isolate::CreateParams params;
+  params.snapshot_blob = startup_data;
+  params.array_buffer_allocator = default_allocator;
+  Isolate* iso = Isolate::New(params);
+  Locker locker(iso);
+  Isolate::Scope isolate_scope(iso);
+  HandleScope handle_scope(iso);
+
+  iso->SetCaptureStackTraceForUncaughtExceptions(true);
+
+  // Create a Context for internal use
+  m_ctx* ctx = new m_ctx;
+  ctx->ptr.Reset(iso, Context::New(iso));
+  ctx->iso = iso;
+  iso->SetData(0, ctx);
+
+  return iso;
 }
 
 IsolatePtr NewIsolate() {
