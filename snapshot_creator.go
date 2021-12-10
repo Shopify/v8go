@@ -7,26 +7,48 @@ package v8go
 // #include <stdlib.h>
 // #include "v8go.h"
 import "C"
+import "unsafe"
+
+func CreateSnapshot(source, origin string) *StartupData {
+	cSource := C.CString(source)
+	cOrigin := C.CString(origin)
+	defer C.free(unsafe.Pointer(cSource))
+	defer C.free(unsafe.Pointer(cOrigin))
+
+	ptr := C.CreateSnapshot(cSource, cOrigin)
+	return &StartupData{ptr: ptr}
+}
 
 type SnapshotCreator struct {
 	ptr C.SnapshotCreatorPtr
 	iso *Isolate
 }
 
-func NewSnapshotCreator(iso *Isolate) *SnapshotCreator {
-	ptr := C.NewSnapshotCreator()
+func NewSnapshotCreator() *SnapshotCreator {
+	v8once.Do(func() {
+		C.Init()
+	})
+
+	wrap := C.NewSnapshotCreator()
+
+	iso := &Isolate{
+		ptr: wrap.iso,
+		cbs: make(map[int]FunctionCallback),
+	}
+	iso.null = newValueNull(iso)
+	iso.undefined = newValueUndefined(iso)
+
 	return &SnapshotCreator{
-		ptr: ptr,
+		ptr: wrap.ptr,
 		iso: iso,
 	}
 }
 
 // TODO: Delete snapshot creator will delete associated iso too
 
-// func (s *SnapshotCreator) GetIsolate() *Isolate {
-// 	isoptr :=	C.SnapshotCreatorGetIsolate(s.ptr)
-// 	return s.iso
-// }
+func (s *SnapshotCreator) GetIsolate() *Isolate {
+	return s.iso
+}
 
 type FunctionCodeHandling string
 

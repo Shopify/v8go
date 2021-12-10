@@ -142,6 +142,11 @@ typedef struct {
   StartupDataPtr startup_data;
 } IsolateCreateParams;
 
+typedef struct {
+  SnapshotCreatorPtr ptr;
+  IsolatePtr iso;
+} SnapshotCreatorWrap;
+
 extern void Init();
 extern IsolatePtr NewIsolate();
 extern IsolatePtr NewIsolateWithCreateParams(StartupDataPtr ptr);
@@ -151,7 +156,8 @@ extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
-extern SnapshotCreatorPtr NewSnapshotCreator();
+extern StartupDataPtr CreateSnapshot(const char* source, const char* origin);
+extern SnapshotCreatorWrap* NewSnapshotCreator();
 extern StartupDataPtr SnapshotCreatorCreateBlob(SnapshotCreatorPtr sc);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
