@@ -8,6 +8,8 @@ import (
 	"rogchap.com/v8go"
 )
 
+var total time.Duration
+
 func BenchmarkProfiler(b *testing.B) {
 	b.ReportAllocs()
 
@@ -23,12 +25,15 @@ func BenchmarkProfiler(b *testing.B) {
 		profileName := fmt.Sprintf("test-%d", n)
 		profiler.StartProfiling(profileName)
 
-		_, _ = fn.Call(ctx.Global())
+		for j := 0; j < 10; j++ {
+			_, _ = fn.Call(ctx.Global())
+		}
 
 		start := time.Now()
 		profile := profiler.StopProfiling(profileName)
 		printTree(profile.GetTopDownRoot())
-		fmt.Println(time.Since(start))
+		duration := time.Since(start)
+		total += duration
 
 		profile.Delete()
 	}
@@ -36,6 +41,8 @@ func BenchmarkProfiler(b *testing.B) {
 	ctx.Close()
 	profiler.Dispose()
 	vm.Dispose()
+
+	fmt.Printf("average duration %dus\n", total.Microseconds()/int64(b.N))
 }
 
 func TestProfilerPerf(t *testing.T) {
