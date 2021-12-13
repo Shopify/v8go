@@ -8,6 +8,7 @@ package v8go
 // #include "v8go.h"
 import "C"
 import (
+	"fmt"
 	"unsafe"
 )
 
@@ -30,29 +31,36 @@ type CpuProfileNode struct {
 }
 
 func (c *CpuProfile) Delete() {
+	fmt.Println("C.CpuProfileDelete")
 	C.CpuProfileDelete(c.ptr)
 }
 
 // Returns the root node of the top down call tree.
 func (c *CpuProfile) GetTopDownRoot() *CpuProfileNode {
+	fmt.Println("C.CpuProfileGetTopDownRoot")
 	ptr := C.CpuProfileGetTopDownRoot(c.ptr)
 	return &CpuProfileNode{ptr: ptr, iso: c.iso}
 }
 
 // Returns script name
 func (c *CpuProfileNode) GetScriptResourceName() string {
+	fmt.Println("C.CpuProfileNodeGetScriptResourceName")
 	str := C.CpuProfileNodeGetScriptResourceName(c.ptr)
+	fmt.Println("C.GoString")
 	return C.GoString(str)
 }
 
 // Returns function name (empty string for anonymous functions.)
 func (c *CpuProfileNode) GetFunctionName() string {
+	fmt.Println("C.CpuProfileNodeGetFunctionName")
 	str := C.CpuProfileNodeGetFunctionName(c.ptr)
+	fmt.Println("C.GoString")
 	return C.GoString(str)
 }
 
 // Retrieves number of children.
 func (c *CpuProfileNode) GetChildrenCount() int {
+	fmt.Println("C.CpuProfileGetChildrenCount")
 	i := C.CpuProfileNodeGetChildrenCount(c.ptr)
 	return int(i)
 }
@@ -63,6 +71,7 @@ func (c *CpuProfileNode) GetChild(index int) *CpuProfileNode {
 	if index < 0 || index > count {
 		return nil
 	}
+	fmt.Println("C.CpuProfileNodeGetChild")
 	ptr := C.CpuProfileNodeGetChild(c.ptr, C.int(index))
 	return &CpuProfileNode{ptr: ptr, iso: c.iso}
 }
@@ -76,6 +85,7 @@ func (c *CpuProfileNode) GetParent() *CpuProfileNode {
 // Returns the number, 1-based, of the line where the function originates.
 // kNoLineNumberInfo if no line number information is available.
 func (c *CpuProfileNode) GetLineNumber() int {
+	fmt.Println("C.CpuProfileNodeGetLineNumber")
 	no := C.CpuProfileNodeGetLineNumber(c.ptr)
 	return int(no)
 }
@@ -83,6 +93,7 @@ func (c *CpuProfileNode) GetLineNumber() int {
 //  Returns 1-based number of the column where the function originates.
 //  kNoColumnNumberInfo if no column number information is available.
 func (c *CpuProfileNode) GetColumnNumber() int {
+	fmt.Println("C.CpuProfileNodeGetColumnNumber")
 	no := C.CpuProfileNodeGetColumnNumber(c.ptr)
 	return int(no)
 }
@@ -103,6 +114,7 @@ func (c *CpuProfiler) StartProfiling(title string) {
 func (c *CpuProfiler) StopProfiling(title string, securityToken string) *CpuProfile {
 	tstr := C.CString(title)
 	defer C.free(unsafe.Pointer(tstr))
+	fmt.Println("C.CpuProfilerStopProfiling")
 	ptr := C.CpuProfilerStopProfiling(c.iso.ptr, c.ptr, tstr)
 	return &CpuProfile{ptr: ptr, iso: c.iso}
 }
