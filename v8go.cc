@@ -228,6 +228,11 @@ void CpuProfilerDispose(CpuProfilerPtr ptr) {
   cp->Dispose();
 }
 
+void CpuProfileDelete(CpuProfilePtr ptr) {
+  CpuProfile* p = static_cast<CpuProfile*>(ptr);
+  p->Delete();
+}
+
 void CpuProfilerStartProfiling(IsolatePtr iso_ptr, CpuProfilerPtr ptr, const char* title) {
   Isolate* iso = static_cast<Isolate*>(iso_ptr);
   Locker locker(iso);
@@ -280,6 +285,11 @@ CpuProfileNodePtr CpuProfileNodeGetParent(CpuProfilePtr ptr) {
   CpuProfileNode* cp = static_cast<CpuProfileNode*>(ptr);
   const CpuProfileNode* cpuProfileNode = cp->GetParent();
   return const_cast<CpuProfileNode*>(cpuProfileNode);
+}
+
+const char* CpuProfileNodeGetScriptResourceName(CpuProfileNodePtr ptr) {
+  CpuProfileNode* cpn = static_cast<CpuProfileNode*>(ptr);
+  return cpn->GetScriptResourceNameStr();
 }
 
 const char* CpuProfileNodeGetFunctionName(CpuProfileNodePtr ptr) {

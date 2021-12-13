@@ -68,7 +68,9 @@ extern CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr,
                                               const char* title);
 
 extern CpuProfileNodePtr CpuProfileGetTopDownRoot(CpuProfilePtr ptr);
+extern void CpuProfileDelete(CpuProfilePtr ptr);
 
+extern const char* CpuProfileNodeGetScriptResourceName(CpuProfileNodePtr ptr);
 extern const char* CpuProfileNodeGetFunctionName(CpuProfileNodePtr ptr);
 extern int CpuProfileNodeGetChildrenCount(CpuProfileNodePtr ptr);
 extern CpuProfileNodePtr CpuProfileNodeGetChild(CpuProfileNodePtr ptr,

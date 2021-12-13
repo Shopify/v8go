@@ -29,10 +29,20 @@ type CpuProfileNode struct {
 	iso *Isolate
 }
 
+func (c *CpuProfile) Delete() {
+	C.CpuProfileDelete(c.ptr)
+}
+
 // Returns the root node of the top down call tree.
 func (c *CpuProfile) GetTopDownRoot() *CpuProfileNode {
 	ptr := C.CpuProfileGetTopDownRoot(c.ptr)
 	return &CpuProfileNode{ptr: ptr, iso: c.iso}
+}
+
+// Returns script name
+func (c *CpuProfileNode) GetScriptResourceName() string {
+	str := C.CpuProfileNodeGetScriptResourceName(c.ptr)
+	return C.GoString(str)
 }
 
 // Returns function name (empty string for anonymous functions.)
