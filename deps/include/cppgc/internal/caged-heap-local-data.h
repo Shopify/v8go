@@ -53,10 +53,10 @@ static_assert(sizeof(AgeTable) == 1 * api_constants::kMB,
 #endif  // CPPGC_YOUNG_GENERATION
 
 struct CagedHeapLocalData final {
-  CagedHeapLocalData(HeapBase&, PageAllocator&);
+  explicit CagedHeapLocalData(HeapBase* heap_base) : heap_base(heap_base) {}
 
   bool is_incremental_marking_in_progress = false;
-  HeapBase& heap_base;
+  HeapBase* heap_base = nullptr;
 #if defined(CPPGC_YOUNG_GENERATION)
   AgeTable age_table;
 #endif

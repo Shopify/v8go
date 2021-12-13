@@ -9,17 +9,13 @@
 #include <type_traits>
 
 #include "cppgc/internal/write-barrier.h"
-#include "cppgc/sentinel-pointer.h"
 #include "cppgc/source-location.h"
-#include "cppgc/type-traits.h"
 #include "v8config.h"  // NOLINT(build/include_directory)
 
 namespace cppgc {
 namespace internal {
 
-class HeapBase;
 class PersistentRegion;
-class CrossThreadPersistentRegion;
 
 // Tags to distinguish between strong and weak member types.
 class StrongMemberTag;
@@ -51,62 +47,25 @@ struct NoWriteBarrierPolicy {
   static void AssigningBarrier(const void*, const void*) {}
 };
 
-class V8_EXPORT SameThreadEnabledCheckingPolicyBase {
+class V8_EXPORT EnabledCheckingPolicy {
  protected:
-  void CheckPointerImpl(const void* ptr, bool points_to_payload,
-                        bool check_off_heap_assignments);
-
-  const HeapBase* heap_ = nullptr;
-};
-
-template <bool kCheckOffHeapAssignments>
-class V8_EXPORT SameThreadEnabledCheckingPolicy
-    : private SameThreadEnabledCheckingPolicyBase {
- protected:
-  template <typename T>
-  void CheckPointer(const T* ptr) {
-    if (!ptr || (kSentinelPointer == ptr)) return;
-
-    CheckPointersImplTrampoline<T>::Call(this, ptr);
-  }
+  EnabledCheckingPolicy();
+  void CheckPointer(const void* ptr);
 
  private:
-  template <typename T, bool = IsCompleteV<T>>
-  struct CheckPointersImplTrampoline {
-    static void Call(SameThreadEnabledCheckingPolicy* policy, const T* ptr) {
-      policy->CheckPointerImpl(ptr, false, kCheckOffHeapAssignments);
-    }
-  };
-
-  template <typename T>
-  struct CheckPointersImplTrampoline<T, true> {
-    static void Call(SameThreadEnabledCheckingPolicy* policy, const T* ptr) {
-      policy->CheckPointerImpl(ptr, IsGarbageCollectedTypeV<T>,
-                               kCheckOffHeapAssignments);
-    }
-  };
+  void* impl_;
 };
 
 class DisabledCheckingPolicy {
  protected:
-  void CheckPointer(const void*) {}
+  void CheckPointer(const void* raw) {}
 };
 
 #if V8_ENABLE_CHECKS
-// Off heap members are not connected to object graph and thus cannot ressurect
-// dead objects.
-using DefaultMemberCheckingPolicy =
-    SameThreadEnabledCheckingPolicy<false /* kCheckOffHeapAssignments*/>;
-using DefaultPersistentCheckingPolicy =
-    SameThreadEnabledCheckingPolicy<true /* kCheckOffHeapAssignments*/>;
+using DefaultCheckingPolicy = EnabledCheckingPolicy;
 #else
-using DefaultMemberCheckingPolicy = DisabledCheckingPolicy;
-using DefaultPersistentCheckingPolicy = DisabledCheckingPolicy;
+using DefaultCheckingPolicy = DisabledCheckingPolicy;
 #endif
-// For CT(W)P neither marking information (for value), nor objectstart bitmap
-// (for slot) are guaranteed to be present because there's no synchonization
-// between heaps after marking.
-using DefaultCrossThreadPersistentCheckingPolicy = DisabledCheckingPolicy;
 
 class KeepLocationPolicy {
  public:
@@ -156,27 +115,25 @@ struct WeakPersistentPolicy {
 
 struct StrongCrossThreadPersistentPolicy {
   using IsStrongPersistent = std::true_type;
-  static V8_EXPORT CrossThreadPersistentRegion& GetPersistentRegion(
-      const void* object);
+  static V8_EXPORT PersistentRegion& GetPersistentRegion(const void* object);
 };
 
 struct WeakCrossThreadPersistentPolicy {
   using IsStrongPersistent = std::false_type;
-  static V8_EXPORT CrossThreadPersistentRegion& GetPersistentRegion(
-      const void* object);
+  static V8_EXPORT PersistentRegion& GetPersistentRegion(const void* object);
 };
 
 // Forward declarations setting up the default policies.
 template <typename T, typename WeaknessPolicy,
           typename LocationPolicy = DefaultLocationPolicy,
-          typename CheckingPolicy = DefaultCrossThreadPersistentCheckingPolicy>
+          typename CheckingPolicy = DisabledCheckingPolicy>
 class BasicCrossThreadPersistent;
 template <typename T, typename WeaknessPolicy,
           typename LocationPolicy = DefaultLocationPolicy,
-          typename CheckingPolicy = DefaultPersistentCheckingPolicy>
+          typename CheckingPolicy = DefaultCheckingPolicy>
 class BasicPersistent;
 template <typename T, typename WeaknessTag, typename WriteBarrierPolicy,
-          typename CheckingPolicy = DefaultMemberCheckingPolicy>
+          typename CheckingPolicy = DefaultCheckingPolicy>
 class BasicMember;
 
 }  // namespace internal
