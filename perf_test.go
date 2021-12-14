@@ -23,6 +23,8 @@ func BenchmarkProfiler(b *testing.B) {
 	input, _ := v8.NewValue(vm, int64(500))
 	val, _ := ctx.Global().Get("fibonacci")
 	fn, _ := val.AsFunction()
+
+	profiler.StartProfiling("outside-profile")
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
@@ -38,6 +40,7 @@ func BenchmarkProfiler(b *testing.B) {
 		// fmt.Println("time printing tree ", time.Since(start))
 	}
 
+	profiler.StopProfiling("outside-profile")
 	// profile.Delete()
 	ctx.Close()
 	profiler.Dispose()
