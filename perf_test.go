@@ -34,7 +34,7 @@ func TestProfilerPerf(t *testing.T) {
 
 		start := time.Now()
 		profile := profiler.StopProfiling(profileName)
-		// fmt.Println("duration to StopProfiling ", time.Since(start))
+		fmt.Println("duration to StopProfiling ", time.Since(start))
 		printTree(profile.GetTopDownRoot())
 		total += time.Since(start)
 
