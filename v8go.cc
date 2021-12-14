@@ -24,6 +24,7 @@ struct _EXCEPTION_POINTERS;
 #include "_cgo_export.h"
 
 using namespace v8;
+using namespace std::chrono;
 
 auto default_platform = platform::NewDefaultPlatform();
 auto default_allocator = ArrayBuffer::Allocator::NewDefaultAllocator();
@@ -258,7 +259,14 @@ CpuProfilePtr CpuProfilerStopProfiling(IsolatePtr iso_ptr, CpuProfilerPtr ptr, c
   Local<String> title_str =
       String::NewFromUtf8(iso, title, NewStringType::kNormal).ToLocalChecked();
 
+  // Get starting timepoint
+  auto start = high_resolution_clock::now();
   CpuProfile* cpuProfile = cp->StopProfiling(title_str);
+  // Get ending timepoint
+  auto stop = high_resolution_clock::now();
+  auto duration = duration_cast<microseconds>(stop - start);
+  std::cout << "Time taken by StopProfiling: "
+       << duration.count() << " microseconds" << std::endl;
 
   return cpuProfile;
 }
