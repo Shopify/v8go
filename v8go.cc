@@ -283,9 +283,6 @@ CPUProfile* CPUProfilerStopProfiling(CPUProfiler* profiler, const char* title) {
   CPUProfileNode* root = NewCPUProfileNode(profile->ptr->GetTopDownRoot());
   profile->root = root;
 
-  profile->startTime = profile->ptr->GetStartTime();
-  profile->endTime = profile->ptr->GetEndTime();
-
   return profile;
 }
 

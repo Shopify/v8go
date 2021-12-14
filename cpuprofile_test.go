@@ -43,10 +43,6 @@ func TestCPUProfile(t *testing.T) {
 	if root.GetFunctionName() != "(root)" {
 		t.Errorf("expected (root), but got %v", root.GetFunctionName())
 	}
-
-	if cpuProfile.GetDuration() <= 0 {
-		t.Fatalf("expected positive profile duration (%s)", cpuProfile.GetDuration())
-	}
 }
 
 func TestCPUProfile_Delete(t *testing.T) {

@@ -64,8 +64,6 @@ typedef struct {
   CpuProfilePtr ptr;
   const char* title;
   CPUProfileNode* root;
-  int64_t startTime;
-  int64_t endTime;
 } CPUProfile;
 
 typedef struct {
