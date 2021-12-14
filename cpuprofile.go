@@ -26,3 +26,13 @@ func (c *CPUProfile) GetTitle() string {
 	str := C.CpuProfileGetTitle(c.iso.ptr, c.ptr)
 	return C.GoString(str)
 }
+
+// Deletes the profile and removes it from CpuProfiler's list.
+// All pointers to nodes previously returned become invalid.
+func (c *CPUProfile) Delete() {
+	if c.ptr == nil {
+		return
+	}
+	C.CpuProfileDelete(c.ptr)
+	c.ptr = nil
+}

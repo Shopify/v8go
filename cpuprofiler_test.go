@@ -72,7 +72,7 @@ const profileScript = `function loop(timeout) {
   this.mmm = 0;
   var start = Date.now();
   while (Date.now() - start < timeout) {
-    var n = 100;
+    var n = 10;
     while(n > 1) {
       n--;
       this.mmm += n * n * n;

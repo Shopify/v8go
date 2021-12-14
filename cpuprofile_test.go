@@ -7,18 +7,18 @@ package v8go_test
 import (
 	"testing"
 
-	"rogchap.com/v8go"
+	v8 "rogchap.com/v8go"
 )
 
 func TestCPUProfile(t *testing.T) {
 	t.Parallel()
 
-	ctx := v8go.NewContext(nil)
+	ctx := v8.NewContext(nil)
 	iso := ctx.Isolate()
 	defer iso.Dispose()
 	defer ctx.Close()
 
-	cpuProfiler := v8go.NewCPUProfiler(iso)
+	cpuProfiler := v8.NewCPUProfiler(iso)
 	defer cpuProfiler.Dispose()
 
 	cpuProfiler.StartProfiling("cpuprofiletest")

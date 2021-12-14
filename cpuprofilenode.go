@@ -20,6 +20,12 @@ func (c *CPUProfileNode) GetFunctionName() string {
 	return C.GoString(str)
 }
 
+// Returns resource name for script from where the function originates.
+func (c *CPUProfileNode) GetScriptResourceName() string {
+	str := C.CpuProfileNodeGetScriptResourceName(c.ptr)
+	return C.GoString(str)
+}
+
 // Retrieves number of children.
 func (c *CPUProfileNode) GetChildrenCount() int {
 	i := C.CpuProfileNodeGetChildrenCount(c.ptr)
