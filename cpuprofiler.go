@@ -10,8 +10,6 @@ package v8go
 */
 import "C"
 import (
-	"fmt"
-	"time"
 	"unsafe"
 )
 
@@ -63,9 +61,7 @@ func (c *CPUProfiler) StopProfiling(title string) *CPUProfile {
 	defer C.free(unsafe.Pointer(tstr))
 
 	profile := C.CPUProfilerStopProfiling(c.ptr, tstr)
-	start := time.Now()
 	root := newCPUProfileNode(profile.root, nil)
-	fmt.Println("duration walking tree in Go ", time.Since(start))
 
 	return &CPUProfile{
 		p:     profile,

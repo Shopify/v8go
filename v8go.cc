@@ -276,27 +276,13 @@ CPUProfile* CPUProfilerStopProfiling(CPUProfiler* profiler, const char* title) {
 
   CPUProfile* profile = new CPUProfile;
 
-  // Get starting timepoint
-  auto start = high_resolution_clock::now();
   profile->ptr = profiler->ptr->StopProfiling(title_str);
-  // Get ending timepoint
-  auto stop = high_resolution_clock::now();
-  auto duration = duration_cast<microseconds>(stop - start);
-  std::cout << "Time taken by StopProfiling: "
-       << duration.count() << " microseconds" << std::endl;
 
   Local<String> str = profile->ptr->GetTitle();
   String::Utf8Value t(profiler->iso, str);
   profile->title = CopyString(t);
 
-  // Get starting timepoint
-  start = high_resolution_clock::now();
   CPUProfileNode* root = NewCPUProfileNode(profile->ptr->GetTopDownRoot());
-  // Get ending timepoint
-  stop = high_resolution_clock::now();
-  duration = duration_cast<microseconds>(stop - start);
-  std::cout << "Time taken building the tree: "
-       << duration.count() << " microseconds" << std::endl;
 
   profile->root = root;
 

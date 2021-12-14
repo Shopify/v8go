@@ -6,13 +6,48 @@ import (
 	"time"
 
 	"rogchap.com/v8go"
+	v8 "rogchap.com/v8go"
 )
+
+var fib = `function fibonacci(num) {
+  if (num <= 1) return 1;
+
+  return fibonacci(num - 1) + fibonacci(num - 2);
+}`
+
+func BenchmarkProfiler(b *testing.B) {
+	vm := v8go.NewIsolate()
+	profiler := v8go.NewCPUProfiler(vm)
+	ctx := v8go.NewContext(vm)
+	ctx.RunScript(fib, "script.js")
+	input, _ := v8.NewValue(vm, int64(500))
+	val, _ := ctx.Global().Get("fibonacci")
+	fn, _ := val.AsFunction()
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		profileName := fmt.Sprintf("test-%d", n)
+
+		profiler.StartProfiling(profileName)
+
+		fn.Call(ctx.Global(), input)
+
+		profile := profiler.StopProfiling(profileName)
+		// start := time.Now()
+		printTree(profile.GetTopDownRoot())
+		// fmt.Println("time printing tree ", time.Since(start))
+	}
+
+	// profile.Delete()
+	ctx.Close()
+	profiler.Dispose()
+	vm.Dispose()
+}
 
 func TestProfilerPerf(t *testing.T) {
 	fmt.Println("starting test")
 	vm := v8go.NewIsolate()
 	profiler := v8go.NewCPUProfiler(vm)
-
 	ctx := v8go.NewContext(vm)
 	ctx.RunScript(profileScript, "script.js")
 	val, _ := ctx.Global().Get("start")
@@ -26,18 +61,13 @@ func TestProfilerPerf(t *testing.T) {
 		profiler.StartProfiling(profileName)
 
 		for j := 0; j < 10; j++ {
-			_, err := fn.Call(ctx.Global())
-			if err != nil {
-				panic(err)
-			}
+			fn.Call(ctx.Global())
 		}
 
 		start := time.Now()
 		profile := profiler.StopProfiling(profileName)
-		fmt.Println("duration to StopProfiling ", time.Since(start))
 		printTree(profile.GetTopDownRoot())
 		total += time.Since(start)
-
 	}
 
 	// profile.Delete()
