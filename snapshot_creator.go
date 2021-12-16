@@ -10,6 +10,10 @@ import "C"
 import "unsafe"
 
 func CreateSnapshot(source, origin string) *StartupData {
+	v8once.Do(func() {
+		C.Init()
+	})
+
 	cSource := C.CString(source)
 	cOrigin := C.CString(origin)
 	defer C.free(unsafe.Pointer(cSource))
@@ -24,31 +28,31 @@ type SnapshotCreator struct {
 	iso *Isolate
 }
 
-func NewSnapshotCreator() *SnapshotCreator {
-	v8once.Do(func() {
-		C.Init()
-	})
+// func NewSnapshotCreator() *SnapshotCreator {
+// 	v8once.Do(func() {
+// 		C.Init()
+// 	})
 
-	wrap := C.NewSnapshotCreator()
+// 	wrap := C.NewSnapshotCreator()
 
-	iso := &Isolate{
-		ptr: wrap.iso,
-		cbs: make(map[int]FunctionCallback),
-	}
-	iso.null = newValueNull(iso)
-	iso.undefined = newValueUndefined(iso)
+// 	iso := &Isolate{
+// 		ptr: wrap.iso,
+// 		cbs: make(map[int]FunctionCallback),
+// 	}
+// 	iso.null = newValueNull(iso)
+// 	iso.undefined = newValueUndefined(iso)
 
-	return &SnapshotCreator{
-		ptr: wrap.ptr,
-		iso: iso,
-	}
-}
+// 	return &SnapshotCreator{
+// 		ptr: wrap.ptr,
+// 		iso: iso,
+// 	}
+// }
 
 // TODO: Delete snapshot creator will delete associated iso too
 
-func (s *SnapshotCreator) GetIsolate() *Isolate {
-	return s.iso
-}
+// func (s *SnapshotCreator) GetIsolate() *Isolate {
+// 	return s.iso
+// }
 
 type FunctionCodeHandling string
 
@@ -61,7 +65,7 @@ type StartupData struct {
 	ptr C.StartupDataPtr
 }
 
-func (s SnapshotCreator) CreateBlob(fch FunctionCodeHandling) *StartupData {
-	ptr := C.SnapshotCreatorCreateBlob(s.ptr)
-	return &StartupData{ptr: ptr}
-}
+// func (s SnapshotCreator) CreateBlob(fch FunctionCodeHandling) *StartupData {
+// 	ptr := C.SnapshotCreatorCreateBlob(s.ptr)
+// 	return &StartupData{ptr: ptr}
+// }

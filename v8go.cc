@@ -138,7 +138,14 @@ StartupData* CreateSnapshot(const char* source, const char* origin) {
   SnapshotCreator creator;
   Isolate* iso = creator.GetIsolate();
 
+  /* Locker locker(iso); */
+  /* Isolate::Scope isolate_scope(iso); */
+
+  {
   HandleScope handle_scope(iso);
+
+  creator.SetDefaultContext(Context::New(iso));
+
   Local<Context> ctx = Context::New(iso);
   Context::Scope context_scope(ctx);
 
@@ -148,38 +155,42 @@ StartupData* CreateSnapshot(const char* source, const char* origin) {
       String::NewFromUtf8(iso, origin, NewStringType::kNormal);
   Local<String> src, ogn;
   if (!maybeSrc.ToLocal(&src) || !maybeOgn.ToLocal(&ogn)) {
-    // TODO
+    std::cout << "error occurred during string conversion" << '\n';
   }
 
   ScriptOrigin script_origin(ogn);
   Local<Script> script;
   if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-    // TODO
+    std::cout << "error occurred during compilation" << '\n';
   }
   script->Run(ctx);
 
-  creator.SetDefaultContext(ctx);
+  size_t index = creator.AddContext(ctx);
+  std::cout << "context index: " << index << '\n';
+  }
 
-  StartupData blob = creator.CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kKeep);
+  StartupData startup_data = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling::kKeep);
+  std::cout << "size of blob: " << startup_data.raw_size << '\n';
+
   StartupData* sd = new StartupData;
-  sd = &blob;
+  sd = &startup_data;
   return sd;
 }
 
-SnapshotCreatorWrap* NewSnapshotCreator() {
-  SnapshotCreator snapshot_creator;
-  SnapshotCreatorWrap* sc = new SnapshotCreatorWrap;
-  sc->ptr = &snapshot_creator;
-  sc->iso = snapshot_creator.GetIsolate();
-  return sc;
-}
+/* SnapshotCreatorWrap* NewSnapshotCreator() { */
+/*   SnapshotCreator snapshot_creator; */
+/*   SnapshotCreatorWrap* sc = new SnapshotCreatorWrap; */
+/*   sc->ptr = &snapshot_creator; */
+/*   sc->iso = snapshot_creator.GetIsolate(); */
+/*   return sc; */
+/* } */
 
-StartupData* SnapshotCreatorCreateBlob(SnapshotCreatorPtr sc) {
-  StartupData blob = sc->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kClear);
-  StartupData* sd = new StartupData;
-  sd = &blob;
-  return sd;
-}
+/* StartupData* SnapshotCreatorCreateBlob(SnapshotCreatorPtr sc) { */
+/*   StartupData blob = sc->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kClear); */
+/*   StartupData* sd = new StartupData; */
+/*   sd = &blob; */
+/*   return sd; */
+/* } */
 
 /********** Isolate **********/
 
