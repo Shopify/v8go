@@ -143,7 +143,7 @@ void print_data(StartupData* startup_data) {
   }
 }
 
-StartupDataPtr CreateSnapshot(const char* source, const char* origin) {
+SnapshotBlob* CreateSnapshot(const char* source, const char* origin) {
   SnapshotCreator creator;
   Isolate* iso = creator.GetIsolate();
 
@@ -179,12 +179,19 @@ StartupDataPtr CreateSnapshot(const char* source, const char* origin) {
   //CreateBlob cannot be called within a HandleScope
   StartupData startup_data = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling::kKeep);
   std::cout << "size of blob: " << startup_data.raw_size << '\n';
-  std::cout << "can be rehashed: " << startup_data.CanBeRehashed() << '\n';
-  std::cout << "is valid: " << startup_data.IsValid() << '\n';
+  /* std::cout << "can be rehashed: " << startup_data.CanBeRehashed() << '\n'; */
+  /* std::cout << "is valid: " << startup_data.IsValid() << '\n'; */
 
   /* print_data(&startup_data); */
+  SnapshotBlob* sb = new SnapshotBlob;
+  sb->data = startup_data.data;
+  sb->raw_size = startup_data.raw_size;
 
-  return &startup_data;
+  return sb;
+}
+
+void SnapshotBlobDelete(SnapshotBlob* ptr) {
+  delete ptr;
 }
 
 /********** Isolate **********/
@@ -207,11 +214,15 @@ void Init() {
   return;
 }
 
-IsolatePtr NewIsolateWithCreateParams(StartupDataPtr startup_data) {
+IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
   Isolate::CreateParams params;
 
-  std::cout << "size of blob: " << startup_data->raw_size << '\n';
+  std::cout << "size of blob: " << snapshot_blob->raw_size << '\n';
+
+  StartupData* startup_data = new StartupData{snapshot_blob->data, snapshot_blob->raw_size};
+
   std::cout << "is valid: " << startup_data->IsValid() << '\n';
+  std::cout << "size of blob: " << startup_data->raw_size << '\n';
   print_data(startup_data);
 
   params.snapshot_blob = startup_data;

@@ -11,12 +11,10 @@
 #include "v8.h"
 
 typedef v8::Isolate* IsolatePtr;
-typedef v8::StartupData* StartupDataPtr;
 typedef v8::CpuProfiler* CpuProfilerPtr;
 typedef v8::CpuProfile* CpuProfilePtr;
 typedef const v8::CpuProfileNode* CpuProfileNodePtr;
 typedef v8::ScriptCompiler::CachedData* ScriptCompilerCachedDataPtr;
-typedef v8::SnapshotCreator* SnapshotCreatorPtr;
 
 extern "C" {
 #else
@@ -26,9 +24,6 @@ typedef v8Isolate* IsolatePtr;
 
 typedef struct v8SnapshotCreator v8SnapshotCreator;
 typedef v8SnapshotCreator* SnapshotCreatorPtr;
-
-typedef struct v8StartupData v8StartupData;
-typedef v8StartupData* StartupDataPtr;
 
 typedef struct v8CpuProfiler v8CpuProfiler;
 typedef v8CpuProfiler* CpuProfilerPtr;
@@ -81,6 +76,11 @@ typedef struct {
 } ScriptCompilerCachedData;
 
 typedef struct {
+  const char* data;
+  int raw_size;
+} SnapshotBlob;
+
+typedef struct {
   ScriptCompilerCachedData cachedData;
   int compileOption;
 } CompileOptions;
@@ -107,10 +107,6 @@ typedef struct {
   int64_t startTime;
   int64_t endTime;
 } CPUProfile;
-
-typedef struct {
-  StartupDataPtr ptr;
-} StartupDataBlob;
 
 typedef struct {
   ValuePtr value;
@@ -144,14 +140,14 @@ typedef struct {
 
 extern void Init();
 extern IsolatePtr NewIsolate();
-extern IsolatePtr NewIsolateWithCreateParams(StartupDataPtr ptr);
+extern IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* ptr);
 extern void IsolatePerformMicrotaskCheckpoint(IsolatePtr ptr);
 extern void IsolateDispose(IsolatePtr ptr);
 extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
-extern StartupDataPtr CreateSnapshot(const char* source, const char* origin);
+extern SnapshotBlob* CreateSnapshot(const char* source, const char* origin);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 

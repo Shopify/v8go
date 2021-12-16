@@ -40,5 +40,5 @@ const (
 )
 
 type StartupData struct {
-	ptr C.StartupDataPtr
+	ptr *C.SnapshotBlob
 }
