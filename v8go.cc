@@ -134,63 +134,58 @@ extern "C" {
 
 /********** SnapshotCreator **********/
 
-StartupData* CreateSnapshot(const char* source, const char* origin) {
+
+void print_data(StartupData* startup_data) {
+  size_t size = static_cast<size_t>(startup_data->raw_size);
+  for (size_t i = 0; i < size; i++) {
+    char endchar = i != size - 1 ? ',' : '\n';
+    std::cout << std::to_string(startup_data->data[i]) << endchar;
+  }
+}
+
+StartupDataPtr CreateSnapshot(const char* source, const char* origin) {
   SnapshotCreator creator;
   Isolate* iso = creator.GetIsolate();
 
-  /* Locker locker(iso); */
-  /* Isolate::Scope isolate_scope(iso); */
-
   {
-  HandleScope handle_scope(iso);
+    HandleScope handle_scope(iso);
 
-  creator.SetDefaultContext(Context::New(iso));
+    creator.SetDefaultContext(Context::New(iso));
 
-  Local<Context> ctx = Context::New(iso);
-  Context::Scope context_scope(ctx);
+    Local<Context> ctx = Context::New(iso);
+    Context::Scope context_scope(ctx);
 
-  MaybeLocal<String> maybeSrc =
-      String::NewFromUtf8(iso, source, NewStringType::kNormal);
-  MaybeLocal<String> maybeOgn =
-      String::NewFromUtf8(iso, origin, NewStringType::kNormal);
-  Local<String> src, ogn;
-  if (!maybeSrc.ToLocal(&src) || !maybeOgn.ToLocal(&ogn)) {
-    std::cout << "error occurred during string conversion" << '\n';
+    MaybeLocal<String> maybeSrc = String::NewFromUtf8(iso, source, NewStringType::kNormal);
+    MaybeLocal<String> maybeOgn = String::NewFromUtf8(iso, origin, NewStringType::kNormal);
+    Local<String> src, ogn;
+    if (!maybeSrc.ToLocal(&src) || !maybeOgn.ToLocal(&ogn)) {
+      std::cout << "error occurred during string conversion" << '\n';
+    }
+
+    ScriptOrigin script_origin(ogn);
+    Local<Script> script;
+    if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
+      std::cout << "error occurred during compilation" << '\n';
+    }
+    Local<Value> result;
+    if (!script->Run(ctx).ToLocal(&result)) {
+      std::cout << "error occurred during script run" << '\n';
+    }
+
+    size_t index = creator.AddContext(ctx);
+    std::cout << "context index: " << index << '\n';
   }
 
-  ScriptOrigin script_origin(ogn);
-  Local<Script> script;
-  if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-    std::cout << "error occurred during compilation" << '\n';
-  }
-  script->Run(ctx);
-
-  size_t index = creator.AddContext(ctx);
-  std::cout << "context index: " << index << '\n';
-  }
-
+  //CreateBlob cannot be called within a HandleScope
   StartupData startup_data = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling::kKeep);
   std::cout << "size of blob: " << startup_data.raw_size << '\n';
+  std::cout << "can be rehashed: " << startup_data.CanBeRehashed() << '\n';
+  std::cout << "is valid: " << startup_data.IsValid() << '\n';
 
-  StartupData* sd = new StartupData;
-  sd = &startup_data;
-  return sd;
+  /* print_data(&startup_data); */
+
+  return &startup_data;
 }
-
-/* SnapshotCreatorWrap* NewSnapshotCreator() { */
-/*   SnapshotCreator snapshot_creator; */
-/*   SnapshotCreatorWrap* sc = new SnapshotCreatorWrap; */
-/*   sc->ptr = &snapshot_creator; */
-/*   sc->iso = snapshot_creator.GetIsolate(); */
-/*   return sc; */
-/* } */
-
-/* StartupData* SnapshotCreatorCreateBlob(SnapshotCreatorPtr sc) { */
-/*   StartupData blob = sc->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kClear); */
-/*   StartupData* sd = new StartupData; */
-/*   sd = &blob; */
-/*   return sd; */
-/* } */
 
 /********** Isolate **********/
 
@@ -214,6 +209,11 @@ void Init() {
 
 IsolatePtr NewIsolateWithCreateParams(StartupDataPtr startup_data) {
   Isolate::CreateParams params;
+
+  std::cout << "size of blob: " << startup_data->raw_size << '\n';
+  std::cout << "is valid: " << startup_data->IsValid() << '\n';
+  print_data(startup_data);
+
   params.snapshot_blob = startup_data;
   params.array_buffer_allocator = default_allocator;
   Isolate* iso = Isolate::New(params);

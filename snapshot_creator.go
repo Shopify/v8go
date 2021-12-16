@@ -7,7 +7,10 @@ package v8go
 // #include <stdlib.h>
 // #include "v8go.h"
 import "C"
-import "unsafe"
+import (
+	"fmt"
+	"unsafe"
+)
 
 func CreateSnapshot(source, origin string) *StartupData {
 	v8once.Do(func() {
@@ -19,40 +22,15 @@ func CreateSnapshot(source, origin string) *StartupData {
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
-	ptr := C.CreateSnapshot(cSource, cOrigin)
-	return &StartupData{ptr: ptr}
+	sd := &StartupData{
+		ptr: C.CreateSnapshot(cSource, cOrigin),
+	}
+	fmt.Printf("%+v\n", sd)
+	fmt.Printf("%#v\n", sd.ptr)
+	// fmt.Println(sd.ptr.data)
+	// fmt.Println(sd.ptr.raw_size)
+	return sd
 }
-
-type SnapshotCreator struct {
-	ptr C.SnapshotCreatorPtr
-	iso *Isolate
-}
-
-// func NewSnapshotCreator() *SnapshotCreator {
-// 	v8once.Do(func() {
-// 		C.Init()
-// 	})
-
-// 	wrap := C.NewSnapshotCreator()
-
-// 	iso := &Isolate{
-// 		ptr: wrap.iso,
-// 		cbs: make(map[int]FunctionCallback),
-// 	}
-// 	iso.null = newValueNull(iso)
-// 	iso.undefined = newValueUndefined(iso)
-
-// 	return &SnapshotCreator{
-// 		ptr: wrap.ptr,
-// 		iso: iso,
-// 	}
-// }
-
-// TODO: Delete snapshot creator will delete associated iso too
-
-// func (s *SnapshotCreator) GetIsolate() *Isolate {
-// 	return s.iso
-// }
 
 type FunctionCodeHandling string
 
@@ -64,8 +42,3 @@ const (
 type StartupData struct {
 	ptr C.StartupDataPtr
 }
-
-// func (s SnapshotCreator) CreateBlob(fch FunctionCodeHandling) *StartupData {
-// 	ptr := C.SnapshotCreatorCreateBlob(s.ptr)
-// 	return &StartupData{ptr: ptr}
-// }

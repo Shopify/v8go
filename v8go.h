@@ -109,6 +109,10 @@ typedef struct {
 } CPUProfile;
 
 typedef struct {
+  StartupDataPtr ptr;
+} StartupDataBlob;
+
+typedef struct {
   ValuePtr value;
   RtnError error;
 } RtnValue;
@@ -138,15 +142,6 @@ typedef struct {
   int sign_bit;
 } ValueBigInt;
 
-typedef struct {
-  StartupDataPtr startup_data;
-} IsolateCreateParams;
-
-typedef struct {
-  SnapshotCreatorPtr ptr;
-  IsolatePtr iso;
-} SnapshotCreatorWrap;
-
 extern void Init();
 extern IsolatePtr NewIsolate();
 extern IsolatePtr NewIsolateWithCreateParams(StartupDataPtr ptr);
@@ -157,8 +152,6 @@ extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
 extern StartupDataPtr CreateSnapshot(const char* source, const char* origin);
-extern SnapshotCreatorWrap* NewSnapshotCreator();
-extern StartupDataPtr SnapshotCreatorCreateBlob(SnapshotCreatorPtr sc);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 
