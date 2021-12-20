@@ -70,7 +70,7 @@ func NewContext(opt ...ContextOption) *Context {
 	if opts.iso.snapshotBlobPtr != nil {
 		ctx = &Context{
 			ref: ref,
-			ptr: C.NewContextFromSnapShot(opts.iso.ptr, opts.iso.snapshotBlobPtr, opts.gTmpl.ptr, C.int(ref)),
+			ptr: C.NewContextFromSnapShot(opts.iso.ptr, opts.iso.snapshotBlobPtr.index, opts.gTmpl.ptr, C.int(ref)),
 			iso: opts.iso,
 		}
 	} else {

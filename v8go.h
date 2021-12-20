@@ -174,7 +174,7 @@ extern ContextPtr NewContext(IsolatePtr iso_ptr,
                              TemplatePtr global_template_ptr,
                              int ref);
 extern ContextPtr NewContextFromSnapShot(IsolatePtr iso,
-                                         SnapshotBlob *snapshot_blob,
+                                         size_t snapshot_blob_index,
                                          TemplatePtr global_template_ptr,
                                          int ref);
 extern void ContextFree(ContextPtr ptr);

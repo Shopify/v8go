@@ -697,7 +697,7 @@ ContextPtr NewContext(IsolatePtr iso,
 }
 
 ContextPtr NewContextFromSnapShot(IsolatePtr iso,
-                                  SnapshotBlob *snapshot_blob,
+                                  size_t snapshot_blob_index,
                                   TemplatePtr global_template_ptr,
                                   int ref)
 {
@@ -721,7 +721,7 @@ ContextPtr NewContextFromSnapShot(IsolatePtr iso,
   // side to lookup the context in the context registry. We use slot 1 as slot 0
   // has special meaning for the Chrome debugger.
 
-  Local<Context> local_ctx = Context::FromSnapshot(iso, snapshot_blob->index).ToLocalChecked();
+  Local<Context> local_ctx = Context::FromSnapshot(iso, snapshot_blob_index).ToLocalChecked();
   local_ctx->SetEmbedderData(1, Integer::New(iso, ref));
 
   m_ctx *ctx = new m_ctx;
