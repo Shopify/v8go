@@ -27,6 +27,7 @@ type Isolate struct {
 
 	null      *Value
 	undefined *Value
+	snapshotBlobPtr *C.SnapshotBlob
 }
 
 // HeapStatistics represents V8 isolate heap statistics
@@ -75,6 +76,7 @@ func NewIsolateWithCreateParams(params CreateParams) *Isolate {
 	iso := &Isolate{
 		ptr: C.NewIsolateWithCreateParams(params.SnapshotBlob.ptr),
 		cbs: make(map[int]FunctionCallback),
+		snapshotBlobPtr: params.SnapshotBlob.ptr,
 	}
 	iso.null = newValueNull(iso)
 	iso.undefined = newValueUndefined(iso)

@@ -146,10 +146,12 @@ void print_data(StartupData* startup_data) {
 SnapshotBlob* CreateSnapshot(const char* source, const char* origin) {
   SnapshotCreator creator;
   Isolate* iso = creator.GetIsolate();
+  size_t index;
 
   {
     HandleScope handle_scope(iso);
 
+    // This is necessary - not sure hwy?
     creator.SetDefaultContext(Context::New(iso));
 
     Local<Context> ctx = Context::New(iso);
@@ -171,21 +173,26 @@ SnapshotBlob* CreateSnapshot(const char* source, const char* origin) {
     if (!script->Run(ctx).ToLocal(&result)) {
       std::cout << "error occurred during script run" << '\n';
     }
-
-    size_t index = creator.AddContext(ctx);
+    // Creator keeps a list of contexts and gives back the index of each as it gets added
+    index = creator.AddContext(ctx);
     std::cout << "context index: " << index << '\n';
   }
 
-  //CreateBlob cannot be called within a HandleScope
+  // CreateBlob cannot be called within a HandleScope
+  //  kKeep - keeps any compiled functions
+  //  kClear - does not keep any compiled functions
+  //  TODO: Make parameteres here configurable
   StartupData startup_data = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling::kKeep);
   std::cout << "size of blob: " << startup_data.raw_size << '\n';
   /* std::cout << "can be rehashed: " << startup_data.CanBeRehashed() << '\n'; */
   /* std::cout << "is valid: " << startup_data.IsValid() << '\n'; */
 
   /* print_data(&startup_data); */
-  SnapshotBlob* sb = new SnapshotBlob;
+  // There is no V8 type called SnapshotBlob, however the IsolateCreateParams has a field called snapshot_blob of type v8::StartupData*
+  SnapshotBlob *sb = new SnapshotBlob;
   sb->data = startup_data.data;
   sb->raw_size = startup_data.raw_size;
+  sb->index = index;
 
   return sb;
 }
@@ -223,7 +230,8 @@ IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
 
   std::cout << "is valid: " << startup_data->IsValid() << '\n';
   std::cout << "size of blob: " << startup_data->raw_size << '\n';
-  print_data(startup_data);
+  std::cout << "index " << snapshot_blob->index << '\n';
+  // print_data(startup_data);
 
   params.snapshot_blob = startup_data;
   params.array_buffer_allocator = default_allocator;
@@ -240,6 +248,7 @@ IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
   ctx->iso = iso;
   iso->SetData(0, ctx);
 
+  std::cout << "Isolate has context: " << iso->InContext() << '\n';
   return iso;
 }
 
@@ -682,6 +691,40 @@ ContextPtr NewContext(IsolatePtr iso,
   local_ctx->SetEmbedderData(1, Integer::New(iso, ref));
 
   m_ctx* ctx = new m_ctx;
+  ctx->ptr.Reset(iso, local_ctx);
+  ctx->iso = iso;
+  return ctx;
+}
+
+ContextPtr NewContextFromSnapShot(IsolatePtr iso,
+                                  SnapshotBlob *snapshot_blob,
+                                  TemplatePtr global_template_ptr,
+                                  int ref)
+{
+  Locker locker(iso);
+  Isolate::Scope isolate_scope(iso);
+  HandleScope handle_scope(iso);
+
+  Local<ObjectTemplate> global_template;
+  if (global_template_ptr != nullptr)
+  {
+    global_template = global_template_ptr->ptr.Get(iso).As<ObjectTemplate>();
+  }
+  else
+  {
+    global_template = ObjectTemplate::New(iso);
+  }
+
+  // For function callbacks we need a reference to the context, but because of
+  // the complexities of C -> Go function pointers, we store a reference to the
+  // context as a simple integer identifier; this can then be used on the Go
+  // side to lookup the context in the context registry. We use slot 1 as slot 0
+  // has special meaning for the Chrome debugger.
+
+  Local<Context> local_ctx = Context::FromSnapshot(iso, snapshot_blob->index).ToLocalChecked();
+  local_ctx->SetEmbedderData(1, Integer::New(iso, ref));
+
+  m_ctx *ctx = new m_ctx;
   ctx->ptr.Reset(iso, local_ctx);
   ctx->iso = iso;
   return ctx;

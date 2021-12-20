@@ -78,6 +78,7 @@ typedef struct {
 typedef struct {
   const char* data;
   int raw_size;
+  size_t index;
 } SnapshotBlob;
 
 typedef struct {
@@ -172,6 +173,10 @@ extern void CPUProfileDelete(CPUProfile* ptr);
 extern ContextPtr NewContext(IsolatePtr iso_ptr,
                              TemplatePtr global_template_ptr,
                              int ref);
+extern ContextPtr NewContextFromSnapShot(IsolatePtr iso,
+                                         SnapshotBlob *snapshot_blob,
+                                         TemplatePtr global_template_ptr,
+                                         int ref);
 extern void ContextFree(ContextPtr ptr);
 extern RtnValue RunScript(ContextPtr ctx_ptr,
                           const char* source,

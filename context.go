@@ -66,10 +66,19 @@ func NewContext(opt ...ContextOption) *Context {
 	ref := ctxSeq
 	ctxMutex.Unlock()
 
-	ctx := &Context{
-		ref: ref,
-		ptr: C.NewContext(opts.iso.ptr, opts.gTmpl.ptr, C.int(ref)),
-		iso: opts.iso,
+	var ctx *Context
+	if opts.iso.snapshotBlobPtr != nil {
+		ctx = &Context{
+			ref: ref,
+			ptr: C.NewContextFromSnapShot(opts.iso.ptr, opts.iso.snapshotBlobPtr, opts.gTmpl.ptr, C.int(ref)),
+			iso: opts.iso,
+		}
+	} else {
+		ctx = &Context{
+			ref: ref,
+			ptr: C.NewContext(opts.iso.ptr, opts.gTmpl.ptr, C.int(ref)),
+			iso: opts.iso,
+		}
 	}
 	ctx.register()
 	runtime.KeepAlive(opts.gTmpl)
