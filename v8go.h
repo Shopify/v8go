@@ -148,7 +148,7 @@ extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
-extern SnapshotBlob* CreateSnapshot(const char* source, const char* origin);
+extern SnapshotBlob* CreateSnapshot(const char* source, const char* origin, int function_code_handling);
 extern void SnapshotBlobDelete(SnapshotBlob* ptr);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);

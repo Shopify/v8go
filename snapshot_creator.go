@@ -8,11 +8,21 @@ package v8go
 // #include "v8go.h"
 import "C"
 import (
-	"fmt"
 	"unsafe"
 )
 
-func CreateSnapshot(source, origin string) *StartupData {
+type FunctionCodeHandling int
+
+const (
+	FunctionCodeHandlingKlear FunctionCodeHandling = iota
+	FunctionCodeHandlingKeep
+)
+
+type SnapshotData struct {
+	ptr *C.SnapshotBlob
+}
+
+func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) *SnapshotData {
 	v8once.Do(func() {
 		C.Init()
 	})
@@ -22,23 +32,7 @@ func CreateSnapshot(source, origin string) *StartupData {
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
-	sd := &StartupData{
-		ptr: C.CreateSnapshot(cSource, cOrigin),
+	return &SnapshotData{
+		ptr: C.CreateSnapshot(cSource, cOrigin, C.int(functionCode)),
 	}
-	fmt.Printf("%+v\n", sd)
-	fmt.Printf("%#v\n", sd.ptr)
-	// fmt.Println(sd.ptr.data)
-	// fmt.Println(sd.ptr.raw_size)
-	return sd
-}
-
-type FunctionCodeHandling string
-
-const (
-	FunctionCodeHandlingKeep  FunctionCodeHandling = "kKeep"
-	FunctionCodeHandlingClear FunctionCodeHandling = "kClear"
-)
-
-type StartupData struct {
-	ptr *C.SnapshotBlob
 }

@@ -27,7 +27,7 @@ type Isolate struct {
 
 	null      *Value
 	undefined *Value
-	snapshotBlobPtr *C.SnapshotBlob
+	createParams CreateParams
 }
 
 // HeapStatistics represents V8 isolate heap statistics
@@ -43,6 +43,10 @@ type HeapStatistics struct {
 	PeakMallocedMemory       uint64
 	NumberOfNativeContexts   uint64
 	NumberOfDetachedContexts uint64
+}
+
+type CreateParams struct {
+	SnapshotBlob *SnapshotData
 }
 
 // NewIsolate creates a new V8 isolate. Only one thread may access
@@ -65,23 +69,21 @@ func NewIsolate() *Isolate {
 	return iso
 }
 
-type CreateParams struct {
-	SnapshotBlob *StartupData
-}
-
 func NewIsolateWithCreateParams(params CreateParams) *Isolate {
 	v8once.Do(func() {
 		C.Init()
 	})
-	iso := &Isolate{
-		ptr: C.NewIsolateWithCreateParams(params.SnapshotBlob.ptr),
-		cbs: make(map[int]FunctionCallback),
-		snapshotBlobPtr: params.SnapshotBlob.ptr,
+	if params.SnapshotBlob.ptr != nil {
+		iso := &Isolate{
+			ptr: C.NewIsolateWithCreateParams(params.SnapshotBlob.ptr),
+			cbs: make(map[int]FunctionCallback),
+			createParams: params,
+		}
+		iso.null = newValueNull(iso)
+		iso.undefined = newValueUndefined(iso)
+		return iso
 	}
-	iso.null = newValueNull(iso)
-	iso.undefined = newValueUndefined(iso)
-	return iso
-
+	return nil
 }
 
 // TerminateExecution terminates forcefully the current thread
@@ -166,8 +168,8 @@ func (i *Isolate) Dispose() {
 		return
 	}
 	C.IsolateDispose(i.ptr)
-	if i.snapshotBlobPtr != nil {
-		C.SnapshotBlobDelete(i.snapshotBlobPtr)
+	if i.createParams.SnapshotBlob.ptr != nil {
+		C.SnapshotBlobDelete(i.createParams.SnapshotBlob.ptr)
 	}
 	i.ptr = nil
 }

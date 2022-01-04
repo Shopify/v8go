@@ -143,7 +143,7 @@ void print_data(StartupData* startup_data) {
   }
 }
 
-SnapshotBlob* CreateSnapshot(const char* source, const char* origin) {
+SnapshotBlob* CreateSnapshot(const char* source, const char* origin, int function_code_handling) {
   SnapshotCreator creator;
   Isolate* iso = creator.GetIsolate();
   size_t index;
@@ -181,8 +181,7 @@ SnapshotBlob* CreateSnapshot(const char* source, const char* origin) {
   // CreateBlob cannot be called within a HandleScope
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
-  //  TODO: Make parameteres here configurable
-  StartupData startup_data = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling::kKeep);
+  StartupData startup_data = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling(function_code_handling));
   std::cout << "size of blob: " << startup_data.raw_size << '\n';
   /* std::cout << "can be rehashed: " << startup_data.CanBeRehashed() << '\n'; */
   /* std::cout << "is valid: " << startup_data.IsValid() << '\n'; */
