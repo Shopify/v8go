@@ -151,10 +151,10 @@ SnapshotBlob* CreateSnapshot(const char* source, const char* origin) {
   {
     HandleScope handle_scope(iso);
 
-    // This is necessary - not sure hwy?
-    creator.SetDefaultContext(Context::New(iso));
-
     Local<Context> ctx = Context::New(iso);
+
+    creator.SetDefaultContext(ctx);
+
     Context::Scope context_scope(ctx);
 
     MaybeLocal<String> maybeSrc = String::NewFromUtf8(iso, source, NewStringType::kNormal);
