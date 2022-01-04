@@ -166,6 +166,9 @@ func (i *Isolate) Dispose() {
 		return
 	}
 	C.IsolateDispose(i.ptr)
+	if i.snapshotBlobPtr != nil {
+		C.SnapshotBlobDelete(i.snapshotBlobPtr)
+	}
 	i.ptr = nil
 }
 
