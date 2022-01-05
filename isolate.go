@@ -27,7 +27,7 @@ type Isolate struct {
 
 	null      *Value
 	undefined *Value
-	createParams CreateParams
+	createParams *CreateParams
 }
 
 // HeapStatistics represents V8 isolate heap statistics
@@ -45,6 +45,14 @@ type HeapStatistics struct {
 	NumberOfDetachedContexts uint64
 }
 
+type createOptions func(*CreateParams)
+
+func WithStartupData(startupData *StartupData) createOptions {
+	return func(params *CreateParams) {
+		params.StartupData = startupData
+	}
+}
+
 type CreateParams struct {
 	StartupData *StartupData
 }
@@ -56,34 +64,31 @@ type CreateParams struct {
 // by calling iso.Dispose().
 // An *Isolate can be used as a v8go.ContextOption to create a new
 // Context, rather than creating a new default Isolate.
-func NewIsolate() *Isolate {
+func NewIsolate(opts ...createOptions) *Isolate {
 	v8once.Do(func() {
 		C.Init()
 	})
-	iso := &Isolate{
-		ptr: C.NewIsolate(),
-		cbs: make(map[int]FunctionCallback),
+	params := &CreateParams{}
+	for _, opt := range opts {
+		opt(params)
 	}
-	iso.null = newValueNull(iso)
-	iso.undefined = newValueUndefined(iso)
-	return iso
-}
 
-func NewIsolateWithCreateParams(params CreateParams) *Isolate {
-	v8once.Do(func() {
-		C.Init()
-	})
-	if params.StartupData.ptr != nil {
-		iso := &Isolate{
+	var iso *Isolate
+	if params.StartupData != nil {
+		iso = &Isolate{
 			ptr: C.NewIsolateWithCreateParams(params.StartupData.ptr),
 			cbs: make(map[int]FunctionCallback),
 			createParams: params,
 		}
-		iso.null = newValueNull(iso)
-		iso.undefined = newValueUndefined(iso)
-		return iso
+	} else {
+		iso = &Isolate{
+			ptr: C.NewIsolate(),
+			cbs: make(map[int]FunctionCallback),
+		}
 	}
-	return nil
+	iso.null = newValueNull(iso)
+	iso.undefined = newValueUndefined(iso)
+	return iso
 }
 
 // TerminateExecution terminates forcefully the current thread
