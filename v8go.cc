@@ -197,7 +197,7 @@ SnapshotBlob* CreateSnapshot(const char* source, const char* origin, int functio
 }
 
 void SnapshotBlobDelete(SnapshotBlob* ptr) {
-  delete ptr->data;
+  delete[] ptr->data;
   delete ptr;
 }
 
