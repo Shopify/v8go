@@ -36,3 +36,7 @@ func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) *S
 		ptr: C.CreateSnapshot(cSource, cOrigin, C.int(functionCode)),
 	}
 }
+
+func (s *StartupData) Dispose() {
+	C.SnapshotBlobDelete(s.ptr)
+}

@@ -16,6 +16,7 @@ func TestCreateSnapshot(t *testing.T) {
 
 	iso := v8.NewIsolateWithCreateParams(v8.CreateParams{StartupData: data})
 	defer iso.Dispose()
+	defer data.Dispose()
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()
 
