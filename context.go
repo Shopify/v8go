@@ -67,10 +67,10 @@ func NewContext(opt ...ContextOption) *Context {
 	ctxMutex.Unlock()
 
 	var ctx *Context
-	if opts.iso.createParams.SnapshotBlob.ptr != nil {
+	if opts.iso.createParams.StartupData.ptr != nil {
 		ctx = &Context{
 			ref: ref,
-			ptr: C.NewContextFromSnapShot(opts.iso.ptr, opts.iso.createParams.SnapshotBlob.ptr.index, opts.gTmpl.ptr, C.int(ref)),
+			ptr: C.NewContextFromSnapShot(opts.iso.ptr, opts.iso.createParams.StartupData.ptr.index, opts.gTmpl.ptr, C.int(ref)),
 			iso: opts.iso,
 		}
 	} else {

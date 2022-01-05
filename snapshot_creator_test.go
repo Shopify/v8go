@@ -14,7 +14,7 @@ import (
 func TestCreateSnapshot(t *testing.T) {
 	data := v8.CreateSnapshot("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
 
-	iso := v8.NewIsolateWithCreateParams(v8.CreateParams{SnapshotBlob: data})
+	iso := v8.NewIsolateWithCreateParams(v8.CreateParams{StartupData: data})
 	defer iso.Dispose()
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()

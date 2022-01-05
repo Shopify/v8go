@@ -46,7 +46,7 @@ type HeapStatistics struct {
 }
 
 type CreateParams struct {
-	SnapshotBlob *SnapshotData
+	StartupData *StartupData
 }
 
 // NewIsolate creates a new V8 isolate. Only one thread may access
@@ -73,9 +73,9 @@ func NewIsolateWithCreateParams(params CreateParams) *Isolate {
 	v8once.Do(func() {
 		C.Init()
 	})
-	if params.SnapshotBlob.ptr != nil {
+	if params.StartupData.ptr != nil {
 		iso := &Isolate{
-			ptr: C.NewIsolateWithCreateParams(params.SnapshotBlob.ptr),
+			ptr: C.NewIsolateWithCreateParams(params.StartupData.ptr),
 			cbs: make(map[int]FunctionCallback),
 			createParams: params,
 		}
@@ -168,8 +168,8 @@ func (i *Isolate) Dispose() {
 		return
 	}
 	C.IsolateDispose(i.ptr)
-	if i.createParams.SnapshotBlob.ptr != nil {
-		C.SnapshotBlobDelete(i.createParams.SnapshotBlob.ptr)
+	if i.createParams.StartupData.ptr != nil {
+		C.SnapshotBlobDelete(i.createParams.StartupData.ptr)
 	}
 	i.ptr = nil
 }

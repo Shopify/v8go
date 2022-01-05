@@ -18,11 +18,11 @@ const (
 	FunctionCodeHandlingKeep
 )
 
-type SnapshotData struct {
+type StartupData struct {
 	ptr *C.SnapshotBlob
 }
 
-func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) *SnapshotData {
+func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) *StartupData {
 	v8once.Do(func() {
 		C.Init()
 	})
@@ -32,7 +32,7 @@ func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) *S
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
-	return &SnapshotData{
+	return &StartupData{
 		ptr: C.CreateSnapshot(cSource, cOrigin, C.int(functionCode)),
 	}
 }
