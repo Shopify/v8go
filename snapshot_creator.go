@@ -7,9 +7,7 @@ package v8go
 // #include <stdlib.h>
 // #include "v8go.h"
 import "C"
-import (
-	"unsafe"
-)
+import "unsafe"
 
 type FunctionCodeHandling int
 
@@ -22,7 +20,7 @@ type StartupData struct {
 	ptr *C.SnapshotBlob
 }
 
-func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) *StartupData {
+func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
 	v8once.Do(func() {
 		C.Init()
 	})
@@ -32,9 +30,15 @@ func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) *S
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
-	return &StartupData{
-		ptr: C.CreateSnapshot(cSource, cOrigin, C.int(functionCode)),
+	rtn := C.CreateSnapshot(cSource, cOrigin, C.int(functionCode))
+
+	if rtn.blob == nil {
+		return nil, newJSError(rtn.error)
 	}
+
+	return &StartupData{
+		ptr: rtn.blob,
+	}, nil
 }
 
 func (s *StartupData) Dispose() {

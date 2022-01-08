@@ -12,7 +12,8 @@ import (
 )
 
 func TestCreateSnapshot(t *testing.T) {
-	data := v8.CreateSnapshot("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	data, err := v8.CreateSnapshot("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	fatalIf(t, err)
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
@@ -57,5 +58,13 @@ func TestCreateSnapshot(t *testing.T) {
 	}
 	if val2.String() != "1" {
 		t.Fatal("invalid val")
+	}
+}
+
+
+func TestCreateSnapshotFail(t *testing.T) {
+	_, err := v8.CreateSnapshot("uidygwuiwgduw", "script.js", v8.FunctionCodeHandlingKlear)
+	if err == nil {
+		t.Error("Creating snapshot should have fail")
 	}
 }

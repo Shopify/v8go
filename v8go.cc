@@ -134,66 +134,58 @@ extern "C" {
 
 /********** SnapshotCreator **********/
 
-
-void print_data(StartupData* startup_data) {
-  size_t size = static_cast<size_t>(startup_data->raw_size);
-  for (size_t i = 0; i < size; i++) {
-    char endchar = i != size - 1 ? ',' : '\n';
-    std::cout << std::to_string(startup_data->data[i]) << endchar;
-  }
-}
-
-SnapshotBlob* CreateSnapshot(const char* source, const char* origin, int function_code_handling) {
+RtnSnapshotBlob CreateSnapshot(const char* source, const char* origin, int function_code_handling) {
   SnapshotCreator creator;
   Isolate* iso = creator.GetIsolate();
   size_t index;
+  RtnSnapshotBlob rtn = {};
+  RtnError error = {nullptr, nullptr, nullptr};
 
   {
     HandleScope handle_scope(iso);
-
     Local<Context> ctx = Context::New(iso);
-
-    creator.SetDefaultContext(ctx);
 
     Context::Scope context_scope(ctx);
 
     MaybeLocal<String> maybeSrc = String::NewFromUtf8(iso, source, NewStringType::kNormal);
     MaybeLocal<String> maybeOgn = String::NewFromUtf8(iso, origin, NewStringType::kNormal);
     Local<String> src, ogn;
-    if (!maybeSrc.ToLocal(&src) || !maybeOgn.ToLocal(&ogn)) {
-      std::cout << "error occurred during string conversion" << '\n';
+    if (maybeSrc.ToLocal(&src) && maybeOgn.ToLocal(&ogn)) {
+      ScriptOrigin script_origin(ogn);
+      Local<Script> script;
+      if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
+        error.msg = CopyString("Couldn't compile snapshot script");
+        rtn.error = error;
+        return rtn;
+      }
+
+      Local<Value> result;
+      if (!script->Run(ctx).ToLocal(&result)) {
+        error.msg = CopyString("Couldn't run snapshot script");
+        rtn.error = error;
+        return rtn;
+      }
+    } else {
+      error.msg = CopyString("Couldn't parse source/origin string");
+      rtn.error = error;
+      return rtn;
     }
 
-    ScriptOrigin script_origin(ogn);
-    Local<Script> script;
-    if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-      std::cout << "error occurred during compilation" << '\n';
-    }
-    Local<Value> result;
-    if (!script->Run(ctx).ToLocal(&result)) {
-      std::cout << "error occurred during script run" << '\n';
-    }
-    // Creator keeps a list of contexts and gives back the index of each as it gets added
+    creator.SetDefaultContext(ctx);
     index = creator.AddContext(ctx);
-    std::cout << "context index: " << index << '\n';
   }
 
   // CreateBlob cannot be called within a HandleScope
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
   StartupData startup_data = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling(function_code_handling));
-  std::cout << "size of blob: " << startup_data.raw_size << '\n';
-  /* std::cout << "can be rehashed: " << startup_data.CanBeRehashed() << '\n'; */
-  /* std::cout << "is valid: " << startup_data.IsValid() << '\n'; */
 
-  /* print_data(&startup_data); */
-  // There is no V8 type called SnapshotBlob, however the IsolateCreateParams has a field called snapshot_blob of type v8::StartupData*
   SnapshotBlob *sb = new SnapshotBlob;
   sb->data = startup_data.data;
   sb->raw_size = startup_data.raw_size;
   sb->index = index;
-
-  return sb;
+  rtn.blob = sb;
+  return rtn;
 }
 
 void SnapshotBlobDelete(SnapshotBlob* ptr) {
