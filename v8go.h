@@ -181,7 +181,6 @@ extern ContextPtr NewContext(IsolatePtr iso_ptr,
                              int ref);
 extern ContextPtr NewContextFromSnapShot(IsolatePtr iso,
                                          size_t snapshot_blob_index,
-                                         TemplatePtr global_template_ptr,
                                          int ref);
 extern void ContextFree(ContextPtr ptr);
 extern RtnValue RunScript(ContextPtr ctx_ptr,

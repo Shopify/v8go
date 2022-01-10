@@ -690,22 +690,11 @@ ContextPtr NewContext(IsolatePtr iso,
 
 ContextPtr NewContextFromSnapShot(IsolatePtr iso,
                                   size_t snapshot_blob_index,
-                                  TemplatePtr global_template_ptr,
                                   int ref)
 {
   Locker locker(iso);
   Isolate::Scope isolate_scope(iso);
   HandleScope handle_scope(iso);
-
-  Local<ObjectTemplate> global_template;
-  if (global_template_ptr != nullptr)
-  {
-    global_template = global_template_ptr->ptr.Get(iso).As<ObjectTemplate>();
-  }
-  else
-  {
-    global_template = ObjectTemplate::New(iso);
-  }
 
   // For function callbacks we need a reference to the context, but because of
   // the complexities of C -> Go function pointers, we store a reference to the
