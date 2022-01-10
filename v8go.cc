@@ -26,6 +26,7 @@ const int ScriptCompilerEagerCompile = ScriptCompiler::kEagerCompile;
 
 struct m_ctx {
   Isolate* iso;
+  StartupData* startup_data;
   std::vector<m_value*> vals;
   std::vector<m_unboundScript*> unboundScripts;
   Persistent<Context> ptr;
@@ -132,72 +133,6 @@ m_unboundScript* tracked_unbound_script(m_ctx* ctx, m_unboundScript* us) {
 
 extern "C" {
 
-/********** SnapshotCreator **********/
-
-RtnSnapshotBlob CreateSnapshot(const char* source,
-                               const char* origin,
-                               int function_code_handling) {
-  SnapshotCreator creator;
-  Isolate* iso = creator.GetIsolate();
-  size_t index;
-  RtnSnapshotBlob rtn = {};
-  RtnError error = {nullptr, nullptr, nullptr};
-
-  {
-    HandleScope handle_scope(iso);
-    Local<Context> ctx = Context::New(iso);
-
-    Context::Scope context_scope(ctx);
-
-    MaybeLocal<String> maybeSrc =
-        String::NewFromUtf8(iso, source, NewStringType::kNormal);
-    MaybeLocal<String> maybeOgn =
-        String::NewFromUtf8(iso, origin, NewStringType::kNormal);
-    Local<String> src, ogn;
-    if (maybeSrc.ToLocal(&src) && maybeOgn.ToLocal(&ogn)) {
-      ScriptOrigin script_origin(ogn);
-      Local<Script> script;
-      if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-        error.msg = CopyString("Couldn't compile snapshot script");
-        rtn.error = error;
-        return rtn;
-      }
-
-      Local<Value> result;
-      if (!script->Run(ctx).ToLocal(&result)) {
-        error.msg = CopyString("Couldn't run snapshot script");
-        rtn.error = error;
-        return rtn;
-      }
-    } else {
-      error.msg = CopyString("Couldn't parse source/origin string");
-      rtn.error = error;
-      return rtn;
-    }
-
-    creator.SetDefaultContext(ctx);
-    index = creator.AddContext(ctx);
-  }
-
-  // CreateBlob cannot be called within a HandleScope
-  //  kKeep - keeps any compiled functions
-  //  kClear - does not keep any compiled functions
-  StartupData startup_data = creator.CreateBlob(
-      SnapshotCreator::FunctionCodeHandling(function_code_handling));
-
-  SnapshotBlob* sb = new SnapshotBlob;
-  sb->data = startup_data.data;
-  sb->raw_size = startup_data.raw_size;
-  sb->index = index;
-  rtn.blob = sb;
-  return rtn;
-}
-
-void SnapshotBlobDelete(SnapshotBlob* ptr) {
-  delete[] ptr->data;
-  delete ptr;
-}
-
 /********** Isolate **********/
 
 #define ISOLATE_SCOPE(iso)           \
@@ -237,6 +172,7 @@ IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
   m_ctx* ctx = new m_ctx;
   ctx->ptr.Reset(iso, Context::New(iso));
   ctx->iso = iso;
+  ctx->startup_data = startup_data;
   iso->SetData(0, ctx);
 
   return iso;
@@ -352,6 +288,74 @@ RtnUnboundScript IsolateCompileUnboundScript(IsolatePtr iso,
   us->ptr.Reset(iso, unbound_script);
   rtn.ptr = tracked_unbound_script(ctx, us);
   return rtn;
+}
+
+/********** SnapshotCreator **********/
+
+RtnSnapshotBlob CreateSnapshot(const char* source,
+                               const char* origin,
+                               int function_code_handling) {
+  SnapshotCreator creator;
+  Isolate* iso = creator.GetIsolate();
+  size_t index;
+  RtnSnapshotBlob rtn = {};
+  RtnError error = {nullptr, nullptr, nullptr};
+
+  {
+    HandleScope handle_scope(iso);
+    Local<Context> ctx = Context::New(iso);
+
+    Context::Scope context_scope(ctx);
+
+    MaybeLocal<String> maybeSrc =
+        String::NewFromUtf8(iso, source, NewStringType::kNormal);
+    MaybeLocal<String> maybeOgn =
+        String::NewFromUtf8(iso, origin, NewStringType::kNormal);
+    Local<String> src, ogn;
+    if (maybeSrc.ToLocal(&src) && maybeOgn.ToLocal(&ogn)) {
+      ScriptOrigin script_origin(ogn);
+      Local<Script> script;
+      if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
+        error.msg = CopyString("Couldn't compile snapshot script");
+        rtn.error = error;
+        return rtn;
+      }
+
+      Local<Value> result;
+      if (!script->Run(ctx).ToLocal(&result)) {
+        error.msg = CopyString("Couldn't run snapshot script");
+        rtn.error = error;
+        return rtn;
+      }
+    } else {
+      error.msg = CopyString("Couldn't parse source/origin string");
+      rtn.error = error;
+      return rtn;
+    }
+
+    creator.SetDefaultContext(ctx);
+    index = creator.AddContext(ctx);
+  }
+
+  // CreateBlob cannot be called within a HandleScope
+  //  kKeep - keeps any compiled functions
+  //  kClear - does not keep any compiled functions
+  StartupData startup_data = creator.CreateBlob(
+      SnapshotCreator::FunctionCodeHandling(function_code_handling));
+
+  SnapshotBlob* sb = new SnapshotBlob;
+  sb->data = startup_data.data;
+  sb->raw_size = startup_data.raw_size;
+  sb->index = index;
+  rtn.blob = sb;
+  return rtn;
+}
+
+void SnapshotBlobDelete(IsolatePtr iso_ptr, SnapshotBlob* ptr) {
+  ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr);
+  delete[] ptr->data;
+  delete ptr;
+  delete ctx->startup_data;
 }
 
 /********** Exceptions & Errors **********/

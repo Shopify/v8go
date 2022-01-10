@@ -41,6 +41,6 @@ func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) (*
 	}, nil
 }
 
-func (s *StartupData) Dispose() {
-	C.SnapshotBlobDelete(s.ptr)
+func (s *StartupData) Dispose(iso *Isolate) {
+	C.SnapshotBlobDelete(iso.ptr, s.ptr)
 }
