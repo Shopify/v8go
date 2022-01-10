@@ -5,7 +5,6 @@
 package v8go_test
 
 import (
-	"fmt"
 	"testing"
 
 	v8 "rogchap.com/v8go"
@@ -25,7 +24,7 @@ func TestCreateSnapshot(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", runVal)
+
 	fn, err := runVal.AsFunction()
 	if err != nil {
 		panic(err)
@@ -47,7 +46,7 @@ func TestCreateSnapshot(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%+v\n", runVal)
+
 	fn2, err := runVal2.AsFunction()
 	if err != nil {
 		panic(err)
