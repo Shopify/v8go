@@ -216,14 +216,7 @@ void Init() {
 IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
   Isolate::CreateParams params;
 
-  std::cout << "size of blob: " << snapshot_blob->raw_size << '\n';
-
   StartupData* startup_data = new StartupData{snapshot_blob->data, snapshot_blob->raw_size};
-
-  std::cout << "is valid: " << startup_data->IsValid() << '\n';
-  std::cout << "size of blob: " << startup_data->raw_size << '\n';
-  std::cout << "index " << snapshot_blob->index << '\n';
-  // print_data(startup_data);
 
   params.snapshot_blob = startup_data;
   params.array_buffer_allocator = default_allocator;
@@ -240,7 +233,6 @@ IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
   ctx->iso = iso;
   iso->SetData(0, ctx);
 
-  std::cout << "Isolate has context: " << iso->InContext() << '\n';
   return iso;
 }
 
