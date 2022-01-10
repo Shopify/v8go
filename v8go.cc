@@ -134,7 +134,9 @@ extern "C" {
 
 /********** SnapshotCreator **********/
 
-RtnSnapshotBlob CreateSnapshot(const char* source, const char* origin, int function_code_handling) {
+RtnSnapshotBlob CreateSnapshot(const char* source,
+                               const char* origin,
+                               int function_code_handling) {
   SnapshotCreator creator;
   Isolate* iso = creator.GetIsolate();
   size_t index;
@@ -147,8 +149,10 @@ RtnSnapshotBlob CreateSnapshot(const char* source, const char* origin, int funct
 
     Context::Scope context_scope(ctx);
 
-    MaybeLocal<String> maybeSrc = String::NewFromUtf8(iso, source, NewStringType::kNormal);
-    MaybeLocal<String> maybeOgn = String::NewFromUtf8(iso, origin, NewStringType::kNormal);
+    MaybeLocal<String> maybeSrc =
+        String::NewFromUtf8(iso, source, NewStringType::kNormal);
+    MaybeLocal<String> maybeOgn =
+        String::NewFromUtf8(iso, origin, NewStringType::kNormal);
     Local<String> src, ogn;
     if (maybeSrc.ToLocal(&src) && maybeOgn.ToLocal(&ogn)) {
       ScriptOrigin script_origin(ogn);
@@ -178,9 +182,10 @@ RtnSnapshotBlob CreateSnapshot(const char* source, const char* origin, int funct
   // CreateBlob cannot be called within a HandleScope
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
-  StartupData startup_data = creator.CreateBlob(SnapshotCreator::FunctionCodeHandling(function_code_handling));
+  StartupData startup_data = creator.CreateBlob(
+      SnapshotCreator::FunctionCodeHandling(function_code_handling));
 
-  SnapshotBlob *sb = new SnapshotBlob;
+  SnapshotBlob* sb = new SnapshotBlob;
   sb->data = startup_data.data;
   sb->raw_size = startup_data.raw_size;
   sb->index = index;
@@ -216,7 +221,8 @@ void Init() {
 IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
   Isolate::CreateParams params;
 
-  StartupData* startup_data = new StartupData{snapshot_blob->data, snapshot_blob->raw_size};
+  StartupData* startup_data =
+      new StartupData{snapshot_blob->data, snapshot_blob->raw_size};
 
   params.snapshot_blob = startup_data;
   params.array_buffer_allocator = default_allocator;
@@ -682,8 +688,7 @@ ContextPtr NewContext(IsolatePtr iso,
 
 ContextPtr NewContextFromSnapShot(IsolatePtr iso,
                                   size_t snapshot_blob_index,
-                                  int ref)
-{
+                                  int ref) {
   Locker locker(iso);
   Isolate::Scope isolate_scope(iso);
   HandleScope handle_scope(iso);
@@ -694,10 +699,11 @@ ContextPtr NewContextFromSnapShot(IsolatePtr iso,
   // side to lookup the context in the context registry. We use slot 1 as slot 0
   // has special meaning for the Chrome debugger.
 
-  Local<Context> local_ctx = Context::FromSnapshot(iso, snapshot_blob_index).ToLocalChecked();
+  Local<Context> local_ctx =
+      Context::FromSnapshot(iso, snapshot_blob_index).ToLocalChecked();
   local_ctx->SetEmbedderData(1, Integer::New(iso, ref));
 
-  m_ctx *ctx = new m_ctx;
+  m_ctx* ctx = new m_ctx;
   ctx->ptr.Reset(iso, local_ctx);
   ctx->iso = iso;
   return ctx;

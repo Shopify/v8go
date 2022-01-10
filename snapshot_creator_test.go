@@ -61,7 +61,6 @@ func TestCreateSnapshot(t *testing.T) {
 	}
 }
 
-
 func TestCreateSnapshotFail(t *testing.T) {
 	_, err := v8.CreateSnapshot("uidygwuiwgduw", "script.js", v8.FunctionCodeHandlingKlear)
 	if err == nil {

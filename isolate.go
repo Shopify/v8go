@@ -25,8 +25,8 @@ type Isolate struct {
 	cbSeq   int
 	cbs     map[int]FunctionCallback
 
-	null      *Value
-	undefined *Value
+	null         *Value
+	undefined    *Value
 	createParams *CreateParams
 }
 
@@ -76,8 +76,8 @@ func NewIsolate(opts ...createOptions) *Isolate {
 	var iso *Isolate
 	if params.StartupData != nil {
 		iso = &Isolate{
-			ptr: C.NewIsolateWithCreateParams(params.StartupData.ptr),
-			cbs: make(map[int]FunctionCallback),
+			ptr:          C.NewIsolateWithCreateParams(params.StartupData.ptr),
+			cbs:          make(map[int]FunctionCallback),
 			createParams: params,
 		}
 	} else {
