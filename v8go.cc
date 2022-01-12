@@ -65,6 +65,8 @@ const char* CopyString(String::Utf8Value& value) {
 static RtnError ExceptionError(TryCatch& try_catch,
                                Isolate* iso,
                                Local<Context> ctx) {
+  HandleScope handle_scope(iso);
+
   RtnError rtn = {nullptr, nullptr, nullptr};
 
   if (try_catch.HasTerminated()) {
@@ -100,16 +102,6 @@ static RtnError ExceptionError(TryCatch& try_catch,
   }
 
   return rtn;
-}
-
-RtnError ExceptionErrorWithLock(TryCatch& try_catch,
-                                Isolate* iso,
-                                Local<Context> ctx) {
-  Locker locker(iso);
-  Isolate::Scope isolate_scope(iso);
-  HandleScope handle_scope(iso);
-
-  return ExceptionError(try_catch, iso, ctx);
 }
 
 m_value* tracked_value(m_ctx* ctx, m_value* val) {
@@ -546,7 +538,7 @@ RtnValue ObjectTemplateNewInstance(TemplatePtr ptr, ContextPtr ctx) {
   Local<ObjectTemplate> obj_tmpl = tmpl.As<ObjectTemplate>();
   Local<Object> obj;
   if (!obj_tmpl->NewInstance(local_ctx).ToLocal(&obj)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
 
@@ -643,7 +635,7 @@ RtnValue FunctionTemplateGetFunction(TemplatePtr ptr, ContextPtr ctx) {
   RtnValue rtn = {};
   Local<Function> fn;
   if (!fn_tmpl->GetFunction(local_ctx).ToLocal(&fn)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
 
@@ -747,19 +739,19 @@ RtnValue RunScript(ContextPtr ctx, const char* source, const char* origin) {
       String::NewFromUtf8(iso, origin, NewStringType::kNormal);
   Local<String> src, ogn;
   if (!maybeSrc.ToLocal(&src) || !maybeOgn.ToLocal(&ogn)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
 
   ScriptOrigin script_origin(ogn);
   Local<Script> script;
   if (!Script::Compile(local_ctx, src, &script_origin).ToLocal(&script)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   Local<Value> result;
   if (!script->Run(local_ctx).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* val = new m_value;
@@ -808,7 +800,7 @@ RtnValue UnboundScriptRun(ContextPtr ctx, UnboundScriptPtr us_ptr) {
   Local<Script> script = unbound_script->BindToCurrentContext();
   Local<Value> result;
   if (!script->Run(local_ctx).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* val = new m_value;
@@ -826,12 +818,12 @@ RtnValue JSONParse(ContextPtr ctx, const char* str) {
 
   Local<String> v8Str;
   if (!String::NewFromUtf8(iso, str, NewStringType::kNormal).ToLocal(&v8Str)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
   }
 
   Local<Value> result;
   if (!JSON::Parse(local_ctx, v8Str).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* val = new m_value;
@@ -935,7 +927,7 @@ RtnValue NewValueString(IsolatePtr iso, const char* v) {
   RtnValue rtn = {};
   Local<String> str;
   if (!String::NewFromUtf8(iso, v).ToLocal(&str)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, ctx->ptr.Get(iso));
+    rtn.error = ExceptionError(try_catch, iso, ctx->ptr.Get(iso));
     return rtn;
   }
   m_value* val = new m_value;
@@ -1017,7 +1009,7 @@ RtnValue NewValueBigIntFromWords(IsolatePtr iso,
   Local<BigInt> bigint;
   if (!BigInt::NewFromWords(local_ctx, sign_bit, word_count, words)
            .ToLocal(&bigint)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* val = new m_value;
@@ -1065,7 +1057,7 @@ RtnString ValueToDetailString(ValuePtr ptr) {
   RtnString rtn = {0};
   Local<String> str;
   if (!value->ToDetailString(local_ctx).ToLocal(&str)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   String::Utf8Value ds(iso, str);
@@ -1108,7 +1100,7 @@ RtnValue ValueToObject(ValuePtr ptr) {
   RtnValue rtn = {};
   Local<Object> obj;
   if (!value->ToObject(local_ctx).ToLocal(&obj)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* new_val = new m_value;
@@ -1441,12 +1433,12 @@ RtnValue ObjectGet(ValuePtr ptr, const char* key) {
   Local<String> key_val;
   if (!String::NewFromUtf8(iso, key, NewStringType::kNormal)
            .ToLocal(&key_val)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   Local<Value> result;
   if (!obj->Get(local_ctx, key_val).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* new_val = new m_value;
@@ -1483,7 +1475,7 @@ RtnValue ObjectGetIdx(ValuePtr ptr, uint32_t idx) {
 
   Local<Value> result;
   if (!obj->Get(local_ctx, idx).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* new_val = new m_value;
@@ -1527,7 +1519,7 @@ RtnValue NewPromiseResolver(ContextPtr ctx) {
   RtnValue rtn = {};
   Local<Promise::Resolver> resolver;
   if (!Promise::Resolver::New(local_ctx).ToLocal(&resolver)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* val = new m_value;
@@ -1576,12 +1568,12 @@ RtnValue PromiseThen(ValuePtr ptr, int callback_ref) {
   Local<Function> func;
   if (!Function::New(local_ctx, FunctionTemplateCallback, cbData)
            .ToLocal(&func)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   Local<Promise> result;
   if (!promise->Then(local_ctx, func).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* result_val = new m_value;
@@ -1601,20 +1593,20 @@ RtnValue PromiseThen2(ValuePtr ptr, int on_fulfilled_ref, int on_rejected_ref) {
   Local<Function> onFulfilledFunc;
   if (!Function::New(local_ctx, FunctionTemplateCallback, onFulfilledData)
            .ToLocal(&onFulfilledFunc)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   Local<Integer> onRejectedData = Integer::New(iso, on_rejected_ref);
   Local<Function> onRejectedFunc;
   if (!Function::New(local_ctx, FunctionTemplateCallback, onRejectedData)
            .ToLocal(&onRejectedFunc)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   Local<Promise> result;
   if (!promise->Then(local_ctx, onFulfilledFunc, onRejectedFunc)
            .ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* result_val = new m_value;
@@ -1634,12 +1626,12 @@ RtnValue PromiseCatch(ValuePtr ptr, int callback_ref) {
   Local<Function> func;
   if (!Function::New(local_ctx, FunctionTemplateCallback, cbData)
            .ToLocal(&func)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   Local<Promise> result;
   if (!promise->Catch(local_ctx, func).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* result_val = new m_value;
@@ -1686,7 +1678,7 @@ RtnValue FunctionCall(ValuePtr ptr, ValuePtr recv, int argc, ValuePtr args[]) {
 
   Local<Value> result;
   if (!fn->Call(local_ctx, local_recv, argc, argv).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* rtnval = new m_value;
@@ -1705,7 +1697,7 @@ RtnValue FunctionNewInstance(ValuePtr ptr, int argc, ValuePtr args[]) {
   buildCallArguments(iso, argv, argc, args);
   Local<Object> result;
   if (!fn->NewInstance(local_ctx, argc, argv).ToLocal(&result)) {
-    rtn.error = ExceptionErrorWithLock(try_catch, iso, local_ctx);
+    rtn.error = ExceptionError(try_catch, iso, local_ctx);
     return rtn;
   }
   m_value* rtnval = new m_value;
