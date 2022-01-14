@@ -74,7 +74,7 @@ func TestCreateSnapshotV1(t *testing.T) {
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	// defer snapshotCreator.Dispose(iso)
+	defer snapshotCreator.Dispose(iso)
 
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()
@@ -109,7 +109,7 @@ func TestCreateSnapshotV2(t *testing.T) {
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	// defer snapshotCreator.Dispose(iso)
+	defer snapshotCreator.Dispose(iso)
 
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()

@@ -20,33 +20,34 @@ type StartupData struct {
 	ptr *C.SnapshotBlob
 }
 
-func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
-	v8once.Do(func() {
-		C.Init()
-	})
+// func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
+// 	v8once.Do(func() {
+// 		C.Init()
+// 	})
 
-	cSource := C.CString(source)
-	cOrigin := C.CString(origin)
-	defer C.free(unsafe.Pointer(cSource))
-	defer C.free(unsafe.Pointer(cOrigin))
+// 	cSource := C.CString(source)
+// 	cOrigin := C.CString(origin)
+// 	defer C.free(unsafe.Pointer(cSource))
+// 	defer C.free(unsafe.Pointer(cOrigin))
 
-	rtn := C.CreateSnapshot(cSource, cOrigin, C.int(functionCode))
+// 	rtn := C.CreateSnapshot(cSource, cOrigin, C.int(functionCode))
 
-	if rtn.blob == nil {
-		return nil, newJSError(rtn.error)
-	}
+// 	if rtn.blob == nil {
+// 		return nil, newJSError(rtn.error)
+// 	}
 
-	return &StartupData{
-		ptr: rtn.blob,
-	}, nil
-}
+// 	return &StartupData{
+// 		ptr: rtn.blob,
+// 	}, nil
+// }
 
-func (s *StartupData) Dispose(iso *Isolate) {
-	C.SnapshotBlobDelete(iso.ptr, s.ptr)
-}
+// func (s *StartupData) Dispose(iso *Isolate) {
+// 	C.SnapshotBlobDelete(iso.ptr, s.ptr)
+// }
 
 type SnapshotCreator struct {
-	ptr C.SnapshotCreatorPtr
+	ptr     C.SnapshotCreatorPtr
+	dataPtr *C.SnapshotBlob
 }
 
 func NewSnapshotCreator() *SnapshotCreator {
@@ -76,12 +77,18 @@ func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCod
 		return nil, newJSError(rtn.error)
 	}
 
+	s.dataPtr = rtn.blob
+
 	return &StartupData{
 		ptr: rtn.blob,
 	}, nil
 }
 
 func (s *SnapshotCreator) CreateV2(scripts []string, functionCode FunctionCodeHandling) (*StartupData, error) {
+	if s.ptr == nil {
+		panic("Cannot use snapshot creator after creating the blob")
+	}
+
 	charArray := make([]*C.char, len(scripts))
 	for i, s := range scripts {
 		charArray[i] = C.CString(s)
@@ -89,6 +96,7 @@ func (s *SnapshotCreator) CreateV2(scripts []string, functionCode FunctionCodeHa
 	cOrigin := C.CString("<embedded>")
 
 	rtn := C.CreateSnapshotV3(s.ptr, &charArray[0], C.int(len(scripts)), cOrigin, C.int(functionCode))
+	s.ptr = nil
 
 	for _, s := range charArray {
 		C.free(unsafe.Pointer(s))
@@ -99,11 +107,13 @@ func (s *SnapshotCreator) CreateV2(scripts []string, functionCode FunctionCodeHa
 		return nil, newJSError(rtn.error)
 	}
 
+	s.dataPtr = rtn.blob
+
 	return &StartupData{
 		ptr: rtn.blob,
 	}, nil
 }
 
-// func (s *SnapshotCreator) Dispose(iso *Isolate) {
-// 	C.SnapshotBlobDelete(iso.ptr, s.ptr)
-// }
+func (s *SnapshotCreator) Dispose(iso *Isolate) {
+	C.SnapshotBlobDelete(iso.ptr, s.dataPtr)
+}

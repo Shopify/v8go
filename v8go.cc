@@ -428,6 +428,7 @@ RtnSnapshotBlob CreateSnapshotV3(SnapshotCreatorPtr ptr,
   sb->raw_size = startup_data.raw_size;
   sb->index = index;
   rtn.blob = sb;
+  delete ptr;
   return rtn;
 }
 
