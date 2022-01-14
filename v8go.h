@@ -15,6 +15,7 @@ typedef v8::CpuProfiler* CpuProfilerPtr;
 typedef v8::CpuProfile* CpuProfilePtr;
 typedef const v8::CpuProfileNode* CpuProfileNodePtr;
 typedef v8::ScriptCompiler::CachedData* ScriptCompilerCachedDataPtr;
+typedef v8::SnapshotCreator* SnapshotCreatorPtr;
 
 extern "C" {
 #else
@@ -157,6 +158,16 @@ extern RtnSnapshotBlob CreateSnapshot(const char* source,
                                       const char* origin,
                                       int function_code_handling);
 extern void SnapshotBlobDelete(IsolatePtr iso_ptr, SnapshotBlob* ptr);
+extern SnapshotCreatorPtr NewSnapshotCreator();
+extern RtnSnapshotBlob CreateSnapshotV2(SnapshotCreatorPtr ptr,
+                                      const char* source,
+                                      const char* origin,
+                                      int function_code_handling);
+extern RtnSnapshotBlob CreateSnapshotV3(SnapshotCreatorPtr ptr,
+                                      const char** scripts,
+                                      int scripts_size,
+                                      const char* origin,
+                                      int function_code_handling);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 

@@ -44,3 +44,61 @@ func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) (*
 func (s *StartupData) Dispose(iso *Isolate) {
 	C.SnapshotBlobDelete(iso.ptr, s.ptr)
 }
+
+type SnapshotCreator struct {
+	ptr C.SnapshotCreatorPtr
+}
+
+func NewSnapshotCreator() *SnapshotCreator {
+	v8once.Do(func() {
+		C.Init()
+	})
+
+	return &SnapshotCreator{
+		ptr: C.NewSnapshotCreator(),
+	}
+}
+
+func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
+	cSource := C.CString(source)
+	cOrigin := C.CString(origin)
+	defer C.free(unsafe.Pointer(cSource))
+	defer C.free(unsafe.Pointer(cOrigin))
+
+	rtn := C.CreateSnapshotV2(s.ptr, cSource, cOrigin, C.int(functionCode))
+
+	if rtn.blob == nil {
+		return nil, newJSError(rtn.error)
+	}
+
+	return &StartupData{
+		ptr: rtn.blob,
+	}, nil
+}
+
+func (s *SnapshotCreator) CreateV2(scripts []string, functionCode FunctionCodeHandling) (*StartupData, error) {
+	charArray := make([]*C.char, len(scripts))
+	for i, s := range scripts {
+		charArray[i] = C.CString(s)
+	}
+	cOrigin := C.CString("<embedded>")
+
+	rtn := C.CreateSnapshotV3(s.ptr, &charArray[0], C.int(len(scripts)), cOrigin, C.int(functionCode))
+
+	for _, s := range charArray {
+		C.free(unsafe.Pointer(s))
+	}
+	defer C.free(unsafe.Pointer(cOrigin))
+
+	if rtn.blob == nil {
+		return nil, newJSError(rtn.error)
+	}
+
+	return &StartupData{
+		ptr: rtn.blob,
+	}, nil
+}
+
+// func (s *SnapshotCreator) Dispose(iso *Isolate) {
+// 	C.SnapshotBlobDelete(iso.ptr, s.ptr)
+// }
