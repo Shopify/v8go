@@ -60,12 +60,17 @@ func NewSnapshotCreator() *SnapshotCreator {
 }
 
 func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
+	if s.ptr == nil {
+		panic("Cannot use snapshot creator after creating the blob")
+	}
+
 	cSource := C.CString(source)
 	cOrigin := C.CString(origin)
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
 	rtn := C.CreateSnapshotV2(s.ptr, cSource, cOrigin, C.int(functionCode))
+	s.ptr = nil
 
 	if rtn.blob == nil {
 		return nil, newJSError(rtn.error)
