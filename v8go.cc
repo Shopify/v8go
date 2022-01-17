@@ -131,14 +131,6 @@ m_unboundScript* tracked_unbound_script(m_ctx* ctx, m_unboundScript* us) {
   return us;
 }
 
-void print_data(StartupData* startup_data) {
-  size_t size = static_cast<size_t>(startup_data->raw_size);
-  for (size_t i = 0; i < size; i++) {
-    char endchar = i != size - 1 ? ',' : '\n';
-    std::cout << std::to_string(startup_data->data[i]) << endchar;
-  }
-}
-
 extern "C" {
 
 /********** Isolate **********/
