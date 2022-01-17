@@ -154,7 +154,7 @@ extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
-extern void SnapshotBlobDelete(IsolatePtr iso_ptr, SnapshotBlob* ptr);
+extern void SnapshotBlobDelete(SnapshotBlob* ptr);
 extern SnapshotCreatorPtr NewSnapshotCreator();
 extern void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator);
 extern RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,

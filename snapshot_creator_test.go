@@ -18,7 +18,7 @@ func TestCreateSnapshot(t *testing.T) {
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	defer snapshotCreator.Dispose(iso)
+	defer snapshotCreator.Dispose()
 
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()
@@ -43,6 +43,7 @@ func TestCreateSnapshot(t *testing.T) {
 
 func TestCreateSnapshotErrorAfterSuccessfullCreate(t *testing.T) {
 	snapshotCreator := v8.NewSnapshotCreator()
+	defer snapshotCreator.Dispose()
 
 	_, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
 	fatalIf(t, err)
@@ -55,6 +56,8 @@ func TestCreateSnapshotErrorAfterSuccessfullCreate(t *testing.T) {
 
 func TestCreateSnapshotFail(t *testing.T) {
 	snapshotCreator := v8.NewSnapshotCreator()
+	defer snapshotCreator.Dispose()
+
 	_, err := snapshotCreator.Create("uidygwuiwgduw", "script.js", v8.FunctionCodeHandlingKlear)
 	if err == nil {
 		t.Error("Creating snapshot should have fail")
@@ -73,7 +76,7 @@ func TestCreateSnapshotFailAndReuse(t *testing.T) {
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	defer snapshotCreator.Dispose(iso)
+	defer snapshotCreator.Dispose()
 
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()

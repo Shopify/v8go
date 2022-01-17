@@ -61,6 +61,11 @@ func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCod
 	return startupData, nil
 }
 
-func (s *SnapshotCreator) Dispose(iso *Isolate) {
-	C.SnapshotBlobDelete(iso.ptr, s.startupData.ptr)
+func (s *SnapshotCreator) Dispose() {
+	if s.ptr != nil {
+		C.DeleteSnapshotCreator(s.ptr)
+	}
+	if s.startupData != nil {
+		C.SnapshotBlobDelete(s.startupData.ptr)
+	}
 }

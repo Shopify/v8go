@@ -200,6 +200,7 @@ IsolatePtr NewIsolate() {
   m_ctx* ctx = new m_ctx;
   ctx->ptr.Reset(iso, Context::New(iso));
   ctx->iso = iso;
+  ctx->startup_data = nullptr;
   iso->SetData(0, ctx);
 
   return iso;
@@ -310,9 +311,9 @@ void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator) {
 }
 
 RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,
-                                      const char* source,
-                                      const char* origin,
-                                      int function_code_handling) {
+                               const char* source,
+                               const char* origin,
+                               int function_code_handling) {
   Isolate* iso = snapshotCreator->GetIsolate();
   size_t index;
   RtnSnapshotBlob rtn = {};
@@ -369,11 +370,9 @@ RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,
   return rtn;
 }
 
-void SnapshotBlobDelete(IsolatePtr iso_ptr, SnapshotBlob* ptr) {
-  ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr);
+void SnapshotBlobDelete(SnapshotBlob* ptr) {
   delete[] ptr->data;
   delete ptr;
-  delete ctx->startup_data;
 }
 
 /********** Exceptions & Errors **********/
@@ -705,6 +704,7 @@ ContextPtr NewContext(IsolatePtr iso,
   m_ctx* ctx = new m_ctx;
   ctx->ptr.Reset(iso, local_ctx);
   ctx->iso = iso;
+  ctx->startup_data = nullptr;
   return ctx;
 }
 
@@ -728,6 +728,7 @@ ContextPtr NewContextFromSnapShot(IsolatePtr iso,
   m_ctx* ctx = new m_ctx;
   ctx->ptr.Reset(iso, local_ctx);
   ctx->iso = iso;
+  ctx->startup_data = nullptr;
   return ctx;
 }
 
@@ -745,6 +746,10 @@ void ContextFree(ContextPtr ctx) {
   for (m_unboundScript* us : ctx->unboundScripts) {
     us->ptr.Reset();
     delete us;
+  }
+
+  if (ctx->startup_data) {
+    delete ctx->startup_data;
   }
 
   delete ctx;
