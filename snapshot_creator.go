@@ -23,18 +23,44 @@ type startupData struct {
 	ptr *C.SnapshotBlob
 }
 
+type snapshotCreatorOptions struct {
+	iso         *Isolate
+	exitingBlob *startupData
+}
+
+type creatorOptions func(*snapshotCreatorOptions)
+
+func WithIsolate(iso *Isolate) creatorOptions {
+	return func(options *snapshotCreatorOptions) {
+		options.iso = iso
+	}
+}
+
 type SnapshotCreator struct {
 	ptr C.SnapshotCreatorPtr
 	*startupData
+	*snapshotCreatorOptions
 }
 
-func NewSnapshotCreator() *SnapshotCreator {
+func NewSnapshotCreator(opts ...creatorOptions) *SnapshotCreator {
 	v8once.Do(func() {
 		C.Init()
 	})
 
+	options := &snapshotCreatorOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	var cOptions C.SnapshotCreatorOptions
+
+	if options.iso != nil {
+		cOptions.iso = options.iso.ptr
+	}
+
 	return &SnapshotCreator{
-		ptr: C.NewSnapshotCreator(),
+		ptr:                    C.NewSnapshotCreator(cOptions),
+		snapshotCreatorOptions: options,
 	}
 }
 
@@ -55,6 +81,11 @@ func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCod
 	}
 
 	s.ptr = nil
+
+	if s.snapshotCreatorOptions.iso != nil {
+		s.snapshotCreatorOptions.iso.ptr = nil
+	}
+
 	startupData := &startupData{ptr: rtn.blob}
 	s.startupData = startupData
 

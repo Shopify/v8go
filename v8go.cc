@@ -301,9 +301,14 @@ RtnUnboundScript IsolateCompileUnboundScript(IsolatePtr iso,
 
 /********** SnapshotCreator **********/
 
-SnapshotCreatorPtr NewSnapshotCreator() {
-  SnapshotCreator* creator = new SnapshotCreator;
-  return creator;
+SnapshotCreatorPtr NewSnapshotCreator(SnapshotCreatorOptions options) {
+  if (options.iso) {
+    SnapshotCreator* creator = new SnapshotCreator(options.iso);
+    return creator;
+  } else {
+    SnapshotCreator* creator = new SnapshotCreator;
+    return creator;
+  }
 }
 
 void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator) {

@@ -88,6 +88,10 @@ typedef struct {
 } RtnSnapshotBlob;
 
 typedef struct {
+  IsolatePtr iso;
+} SnapshotCreatorOptions;
+
+typedef struct {
   ScriptCompilerCachedData cachedData;
   int compileOption;
 } CompileOptions;
@@ -155,7 +159,7 @@ extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
 extern void SnapshotBlobDelete(SnapshotBlob* ptr);
-extern SnapshotCreatorPtr NewSnapshotCreator();
+extern SnapshotCreatorPtr NewSnapshotCreator(SnapshotCreatorOptions options);
 extern void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator);
 extern RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,
                                       const char* source,
