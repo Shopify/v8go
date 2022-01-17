@@ -19,13 +19,13 @@ const (
 	FunctionCodeHandlingKeep
 )
 
-type startupData struct {
+type StartupData struct {
 	ptr *C.SnapshotBlob
 }
 
 type snapshotCreatorOptions struct {
 	iso         *Isolate
-	exitingBlob *startupData
+	exitingBlob *StartupData
 }
 
 type creatorOptions func(*snapshotCreatorOptions)
@@ -38,7 +38,7 @@ func WithIsolate(iso *Isolate) creatorOptions {
 
 type SnapshotCreator struct {
 	ptr C.SnapshotCreatorPtr
-	*startupData
+	*StartupData
 	*snapshotCreatorOptions
 }
 
@@ -64,7 +64,7 @@ func NewSnapshotCreator(opts ...creatorOptions) *SnapshotCreator {
 	}
 }
 
-func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*startupData, error) {
+func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
 	if s.ptr == nil {
 		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
 	}
@@ -86,8 +86,8 @@ func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCod
 		s.snapshotCreatorOptions.iso.ptr = nil
 	}
 
-	startupData := &startupData{ptr: rtn.blob}
-	s.startupData = startupData
+	startupData := &StartupData{ptr: rtn.blob}
+	s.StartupData = startupData
 
 	return startupData, nil
 }
@@ -96,7 +96,7 @@ func (s *SnapshotCreator) Dispose() {
 	if s.ptr != nil {
 		C.DeleteSnapshotCreator(s.ptr)
 	}
-	if s.startupData != nil {
-		C.SnapshotBlobDelete(s.startupData.ptr)
+	if s.StartupData != nil {
+		C.SnapshotBlobDelete(s.StartupData.ptr)
 	}
 }

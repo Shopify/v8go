@@ -47,14 +47,14 @@ type HeapStatistics struct {
 
 type createOptions func(*CreateParams)
 
-func WithStartupData(startupData *startupData) createOptions {
+func WithStartupData(startupData *StartupData) createOptions {
 	return func(params *CreateParams) {
 		params.startupData = startupData
 	}
 }
 
 type CreateParams struct {
-	startupData *startupData
+	startupData *StartupData
 }
 
 // NewIsolate creates a new V8 isolate. Only one thread may access
