@@ -18,7 +18,7 @@ func TestCreateSnapshot(t *testing.T) {
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	defer snapshotCreator.Dispose()
+	defer data.Dispose()
 
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()
@@ -43,9 +43,9 @@ func TestCreateSnapshot(t *testing.T) {
 
 func TestCreateSnapshotErrorAfterSuccessfullCreate(t *testing.T) {
 	snapshotCreator := v8.NewSnapshotCreator()
-	defer snapshotCreator.Dispose()
 
-	_, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	data, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	defer data.Dispose()
 	fatalIf(t, err)
 
 	_, err = snapshotCreator.Create("function run2() { return 2 };", "script2.js", v8.FunctionCodeHandlingKlear)
@@ -76,7 +76,7 @@ func TestCreateSnapshotFailAndReuse(t *testing.T) {
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	defer snapshotCreator.Dispose()
+	defer data.Dispose()
 
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()
@@ -109,7 +109,7 @@ func TestCreateSnapshotWithIsolateOption(t *testing.T) {
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	defer snapshotCreator.Dispose()
+	defer data.Dispose()
 
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()

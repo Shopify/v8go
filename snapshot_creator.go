@@ -23,6 +23,12 @@ type StartupData struct {
 	ptr *C.SnapshotBlob
 }
 
+func (s *StartupData) Dispose() {
+	if s.ptr != nil {
+		C.SnapshotBlobDelete(s.ptr)
+	}
+}
+
 type snapshotCreatorOptions struct {
 	iso         *Isolate
 	exitingBlob *StartupData
@@ -38,7 +44,6 @@ func WithIsolate(iso *Isolate) creatorOptions {
 
 type SnapshotCreator struct {
 	ptr C.SnapshotCreatorPtr
-	*StartupData
 	*snapshotCreatorOptions
 }
 
@@ -86,17 +91,11 @@ func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCod
 		s.snapshotCreatorOptions.iso.ptr = nil
 	}
 
-	startupData := &StartupData{ptr: rtn.blob}
-	s.StartupData = startupData
-
-	return startupData, nil
+	return &StartupData{ptr: rtn.blob}, nil
 }
 
 func (s *SnapshotCreator) Dispose() {
 	if s.ptr != nil {
 		C.DeleteSnapshotCreator(s.ptr)
-	}
-	if s.StartupData != nil {
-		C.SnapshotBlobDelete(s.StartupData.ptr)
 	}
 }
