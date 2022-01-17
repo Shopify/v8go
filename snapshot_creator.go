@@ -7,7 +7,10 @@ package v8go
 // #include <stdlib.h>
 // #include "v8go.h"
 import "C"
-import "unsafe"
+import (
+	"errors"
+	"unsafe"
+)
 
 type FunctionCodeHandling int
 
@@ -16,31 +19,84 @@ const (
 	FunctionCodeHandlingKeep
 )
 
-type StartupData struct {
+type startupData struct {
 	ptr *C.SnapshotBlob
 }
 
-func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
+type snapshotCreatorOptions struct {
+	iso         *Isolate
+	exitingBlob *startupData
+}
+
+type creatorOptions func(*snapshotCreatorOptions)
+
+func WithIsolate(iso *Isolate) creatorOptions {
+	return func(options *snapshotCreatorOptions) {
+		options.iso = iso
+	}
+}
+
+type SnapshotCreator struct {
+	ptr C.SnapshotCreatorPtr
+	*startupData
+	*snapshotCreatorOptions
+}
+
+func NewSnapshotCreator(opts ...creatorOptions) *SnapshotCreator {
 	v8once.Do(func() {
 		C.Init()
 	})
+
+	options := &snapshotCreatorOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	var cOptions C.SnapshotCreatorOptions
+
+	if options.iso != nil {
+		cOptions.iso = options.iso.ptr
+	}
+
+	return &SnapshotCreator{
+		ptr:                    C.NewSnapshotCreator(cOptions),
+		snapshotCreatorOptions: options,
+	}
+}
+
+func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*startupData, error) {
+	if s.ptr == nil {
+		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
+	}
 
 	cSource := C.CString(source)
 	cOrigin := C.CString(origin)
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
-	rtn := C.CreateSnapshot(cSource, cOrigin, C.int(functionCode))
+	rtn := C.CreateSnapshot(s.ptr, cSource, cOrigin, C.int(functionCode))
 
 	if rtn.blob == nil {
 		return nil, newJSError(rtn.error)
 	}
 
-	return &StartupData{
-		ptr: rtn.blob,
-	}, nil
+	s.ptr = nil
+
+	if s.snapshotCreatorOptions.iso != nil {
+		s.snapshotCreatorOptions.iso.ptr = nil
+	}
+
+	startupData := &startupData{ptr: rtn.blob}
+	s.startupData = startupData
+
+	return startupData, nil
 }
 
-func (s *StartupData) Dispose(iso *Isolate) {
-	C.SnapshotBlobDelete(iso.ptr, s.ptr)
+func (s *SnapshotCreator) Dispose() {
+	if s.ptr != nil {
+		C.DeleteSnapshotCreator(s.ptr)
+	}
+	if s.startupData != nil {
+		C.SnapshotBlobDelete(s.startupData.ptr)
+	}
 }

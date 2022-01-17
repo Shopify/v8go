@@ -68,10 +68,10 @@ func NewContext(opt ...ContextOption) *Context {
 
 	var ctx *Context
 	createParams := opts.iso.createParams
-	if createParams != nil && createParams.StartupData != nil {
+	if createParams != nil && createParams.startupData != nil {
 		ctx = &Context{
 			ref: ref,
-			ptr: C.NewContextFromSnapShot(opts.iso.ptr, createParams.StartupData.ptr.index, C.int(ref)),
+			ptr: C.NewContextFromSnapShot(opts.iso.ptr, createParams.startupData.ptr.index, C.int(ref)),
 			iso: opts.iso,
 		}
 	} else {

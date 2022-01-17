@@ -47,14 +47,14 @@ type HeapStatistics struct {
 
 type createOptions func(*CreateParams)
 
-func WithStartupData(startupData *StartupData) createOptions {
+func WithStartupData(startupData *startupData) createOptions {
 	return func(params *CreateParams) {
-		params.StartupData = startupData
+		params.startupData = startupData
 	}
 }
 
 type CreateParams struct {
-	StartupData *StartupData
+	startupData *startupData
 }
 
 // NewIsolate creates a new V8 isolate. Only one thread may access
@@ -74,9 +74,9 @@ func NewIsolate(opts ...createOptions) *Isolate {
 	}
 
 	var iso *Isolate
-	if params.StartupData != nil {
+	if params.startupData != nil {
 		iso = &Isolate{
-			ptr:          C.NewIsolateWithCreateParams(params.StartupData.ptr),
+			ptr:          C.NewIsolateWithCreateParams(params.startupData.ptr),
 			cbs:          make(map[int]FunctionCallback),
 			createParams: params,
 		}

@@ -192,6 +192,7 @@ IsolatePtr NewIsolate() {
   m_ctx* ctx = new m_ctx;
   ctx->ptr.Reset(iso, Context::New(iso));
   ctx->iso = iso;
+  ctx->startup_data = nullptr;
   iso->SetData(0, ctx);
 
   return iso;
@@ -292,15 +293,30 @@ RtnUnboundScript IsolateCompileUnboundScript(IsolatePtr iso,
 
 /********** SnapshotCreator **********/
 
-RtnSnapshotBlob CreateSnapshot(const char* source,
+SnapshotCreatorPtr NewSnapshotCreator(SnapshotCreatorOptions options) {
+  if (options.iso) {
+    SnapshotCreator* creator = new SnapshotCreator(options.iso);
+    return creator;
+  } else {
+    SnapshotCreator* creator = new SnapshotCreator;
+    return creator;
+  }
+}
+
+void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator) {
+  delete snapshotCreator;
+}
+
+RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,
+                               const char* source,
                                const char* origin,
                                int function_code_handling) {
-  SnapshotCreator creator;
-  Isolate* iso = creator.GetIsolate();
+  Isolate* iso = snapshotCreator->GetIsolate();
   size_t index;
   RtnSnapshotBlob rtn = {};
 
   {
+    bool fail = false;
     HandleScope handle_scope(iso);
     Local<Context> ctx = Context::New(iso);
     TryCatch try_catch(iso);
@@ -312,31 +328,34 @@ RtnSnapshotBlob CreateSnapshot(const char* source,
         String::NewFromUtf8(iso, origin, NewStringType::kNormal);
     Local<String> src, ogn;
     if (maybeSrc.ToLocal(&src) && maybeOgn.ToLocal(&ogn)) {
+      String::Utf8Value value(iso, src);
       ScriptOrigin script_origin(ogn);
       Local<Script> script;
       if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-        rtn.error = ExceptionError(try_catch, iso, ctx);
-        return rtn;
+        fail = true;
       }
 
       Local<Value> result;
       if (!script->Run(ctx).ToLocal(&result)) {
-        rtn.error = ExceptionError(try_catch, iso, ctx);
-        return rtn;
+        fail = true;
       }
     } else {
+      fail = true;
+    }
+
+    if (fail) {
       rtn.error = ExceptionError(try_catch, iso, ctx);
       return rtn;
     }
 
-    creator.SetDefaultContext(ctx);
-    index = creator.AddContext(ctx);
+    snapshotCreator->SetDefaultContext(ctx);
+    index = snapshotCreator->AddContext(ctx);
   }
 
   // CreateBlob cannot be called within a HandleScope
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
-  StartupData startup_data = creator.CreateBlob(
+  StartupData startup_data = snapshotCreator->CreateBlob(
       SnapshotCreator::FunctionCodeHandling(function_code_handling));
 
   SnapshotBlob* sb = new SnapshotBlob;
@@ -344,14 +363,13 @@ RtnSnapshotBlob CreateSnapshot(const char* source,
   sb->raw_size = startup_data.raw_size;
   sb->index = index;
   rtn.blob = sb;
+  delete snapshotCreator;
   return rtn;
 }
 
-void SnapshotBlobDelete(IsolatePtr iso_ptr, SnapshotBlob* ptr) {
-  ISOLATE_SCOPE_INTERNAL_CONTEXT(iso_ptr);
+void SnapshotBlobDelete(SnapshotBlob* ptr) {
   delete[] ptr->data;
   delete ptr;
-  delete ctx->startup_data;
 }
 
 /********** Exceptions & Errors **********/
@@ -683,6 +701,7 @@ ContextPtr NewContext(IsolatePtr iso,
   m_ctx* ctx = new m_ctx;
   ctx->ptr.Reset(iso, local_ctx);
   ctx->iso = iso;
+  ctx->startup_data = nullptr;
   return ctx;
 }
 
@@ -706,6 +725,7 @@ ContextPtr NewContextFromSnapShot(IsolatePtr iso,
   m_ctx* ctx = new m_ctx;
   ctx->ptr.Reset(iso, local_ctx);
   ctx->iso = iso;
+  ctx->startup_data = nullptr;
   return ctx;
 }
 
@@ -723,6 +743,10 @@ void ContextFree(ContextPtr ctx) {
   for (m_unboundScript* us : ctx->unboundScripts) {
     us->ptr.Reset();
     delete us;
+  }
+
+  if (ctx->startup_data) {
+    delete ctx->startup_data;
   }
 
   delete ctx;

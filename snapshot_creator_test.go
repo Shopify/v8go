@@ -11,12 +11,15 @@ import (
 )
 
 func TestCreateSnapshot(t *testing.T) {
-	data, err := v8.CreateSnapshot("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	snapshotCreator := v8.NewSnapshotCreator()
+
+	data, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
 	fatalIf(t, err)
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	defer data.Dispose(iso)
+	defer snapshotCreator.Dispose()
+
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()
 
@@ -36,33 +39,95 @@ func TestCreateSnapshot(t *testing.T) {
 	if val.String() != "1" {
 		t.Fatal("invalid val")
 	}
+}
 
-	// Create another context from the same iso to validate it works again
+func TestCreateSnapshotErrorAfterSuccessfullCreate(t *testing.T) {
+	snapshotCreator := v8.NewSnapshotCreator()
+	defer snapshotCreator.Dispose()
 
-	ctx2 := v8.NewContext(iso)
-	defer ctx2.Close()
+	_, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	fatalIf(t, err)
 
-	runVal2, err := ctx2.Global().Get("run")
-	if err != nil {
-		panic(err)
-	}
-
-	fn2, err := runVal2.AsFunction()
-	if err != nil {
-		panic(err)
-	}
-	val2, err := fn2.Call(v8.Undefined(iso))
-	if err != nil {
-		panic(err)
-	}
-	if val2.String() != "1" {
-		t.Fatal("invalid val")
+	_, err = snapshotCreator.Create("function run2() { return 2 };", "script2.js", v8.FunctionCodeHandlingKlear)
+	if err == nil {
+		t.Error("Creating snapshot should have fail")
 	}
 }
 
 func TestCreateSnapshotFail(t *testing.T) {
-	_, err := v8.CreateSnapshot("uidygwuiwgduw", "script.js", v8.FunctionCodeHandlingKlear)
+	snapshotCreator := v8.NewSnapshotCreator()
+	defer snapshotCreator.Dispose()
+
+	_, err := snapshotCreator.Create("uidygwuiwgduw", "script.js", v8.FunctionCodeHandlingKlear)
 	if err == nil {
 		t.Error("Creating snapshot should have fail")
+	}
+}
+
+func TestCreateSnapshotFailAndReuse(t *testing.T) {
+	snapshotCreator := v8.NewSnapshotCreator()
+	_, err := snapshotCreator.Create("uidygwuiwgduw", "script.js", v8.FunctionCodeHandlingKlear)
+	if err == nil {
+		t.Error("Creating snapshot should have fail")
+	}
+
+	data, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	fatalIf(t, err)
+
+	iso := v8.NewIsolate(v8.WithStartupData(data))
+	defer iso.Dispose()
+	defer snapshotCreator.Dispose()
+
+	ctx := v8.NewContext(iso)
+	defer ctx.Close()
+
+	runVal, err := ctx.Global().Get("run")
+	if err != nil {
+		panic(err)
+	}
+
+	fn, err := runVal.AsFunction()
+	if err != nil {
+		panic(err)
+	}
+	val, err := fn.Call(v8.Undefined(iso))
+	if err != nil {
+		panic(err)
+	}
+	if val.String() != "1" {
+		t.Fatal("invalid val")
+	}
+}
+
+func TestCreateSnapshotWithIsolateOption(t *testing.T) {
+	iso1 := v8.NewIsolate()
+	defer iso1.Dispose()
+	snapshotCreator := v8.NewSnapshotCreator(v8.WithIsolate(iso1))
+
+	data, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	fatalIf(t, err)
+
+	iso := v8.NewIsolate(v8.WithStartupData(data))
+	defer iso.Dispose()
+	defer snapshotCreator.Dispose()
+
+	ctx := v8.NewContext(iso)
+	defer ctx.Close()
+
+	runVal, err := ctx.Global().Get("run")
+	if err != nil {
+		panic(err)
+	}
+
+	fn, err := runVal.AsFunction()
+	if err != nil {
+		panic(err)
+	}
+	val, err := fn.Call(v8.Undefined(iso))
+	if err != nil {
+		panic(err)
+	}
+	if val.String() != "1" {
+		t.Fatal("invalid val")
 	}
 }

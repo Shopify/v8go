@@ -15,6 +15,7 @@ typedef v8::CpuProfiler* CpuProfilerPtr;
 typedef v8::CpuProfile* CpuProfilePtr;
 typedef const v8::CpuProfileNode* CpuProfileNodePtr;
 typedef v8::ScriptCompiler::CachedData* ScriptCompilerCachedDataPtr;
+typedef v8::SnapshotCreator* SnapshotCreatorPtr;
 
 extern "C" {
 #else
@@ -87,6 +88,10 @@ typedef struct {
 } RtnSnapshotBlob;
 
 typedef struct {
+  IsolatePtr iso;
+} SnapshotCreatorOptions;
+
+typedef struct {
   ScriptCompilerCachedData cachedData;
   int compileOption;
 } CompileOptions;
@@ -153,10 +158,13 @@ extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
-extern RtnSnapshotBlob CreateSnapshot(const char* source,
+extern void SnapshotBlobDelete(SnapshotBlob* ptr);
+extern SnapshotCreatorPtr NewSnapshotCreator(SnapshotCreatorOptions options);
+extern void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator);
+extern RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,
+                                      const char* source,
                                       const char* origin,
                                       int function_code_handling);
-extern void SnapshotBlobDelete(IsolatePtr iso_ptr, SnapshotBlob* ptr);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 
