@@ -7,7 +7,10 @@ package v8go
 // #include <stdlib.h>
 // #include "v8go.h"
 import "C"
-import "unsafe"
+import (
+	"errors"
+	"unsafe"
+)
 
 type FunctionCodeHandling int
 
@@ -16,38 +19,13 @@ const (
 	FunctionCodeHandlingKeep
 )
 
-type StartupData struct {
+type startupData struct {
 	ptr *C.SnapshotBlob
 }
 
-// func CreateSnapshot(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
-// 	v8once.Do(func() {
-// 		C.Init()
-// 	})
-
-// 	cSource := C.CString(source)
-// 	cOrigin := C.CString(origin)
-// 	defer C.free(unsafe.Pointer(cSource))
-// 	defer C.free(unsafe.Pointer(cOrigin))
-
-// 	rtn := C.CreateSnapshot(cSource, cOrigin, C.int(functionCode))
-
-// 	if rtn.blob == nil {
-// 		return nil, newJSError(rtn.error)
-// 	}
-
-// 	return &StartupData{
-// 		ptr: rtn.blob,
-// 	}, nil
-// }
-
-// func (s *StartupData) Dispose(iso *Isolate) {
-// 	C.SnapshotBlobDelete(iso.ptr, s.ptr)
-// }
-
 type SnapshotCreator struct {
-	ptr     C.SnapshotCreatorPtr
-	dataPtr *C.SnapshotBlob
+	ptr C.SnapshotCreatorPtr
+	*startupData
 }
 
 func NewSnapshotCreator() *SnapshotCreator {
@@ -60,9 +38,9 @@ func NewSnapshotCreator() *SnapshotCreator {
 	}
 }
 
-func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
+func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*startupData, error) {
 	if s.ptr == nil {
-		panic("Cannot use snapshot creator after creating the blob")
+		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
 	}
 
 	cSource := C.CString(source)
@@ -70,50 +48,19 @@ func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCod
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
-	rtn := C.CreateSnapshotV2(s.ptr, cSource, cOrigin, C.int(functionCode))
-	s.ptr = nil
+	rtn := C.CreateSnapshot(s.ptr, cSource, cOrigin, C.int(functionCode))
 
 	if rtn.blob == nil {
 		return nil, newJSError(rtn.error)
 	}
 
-	s.dataPtr = rtn.blob
-
-	return &StartupData{
-		ptr: rtn.blob,
-	}, nil
-}
-
-func (s *SnapshotCreator) CreateV2(scripts []string, functionCode FunctionCodeHandling) (*StartupData, error) {
-	if s.ptr == nil {
-		panic("Cannot use snapshot creator after creating the blob")
-	}
-
-	charArray := make([]*C.char, len(scripts))
-	for i, s := range scripts {
-		charArray[i] = C.CString(s)
-	}
-	cOrigin := C.CString("<embedded>")
-
-	rtn := C.CreateSnapshotV3(s.ptr, &charArray[0], C.int(len(scripts)), cOrigin, C.int(functionCode))
 	s.ptr = nil
+	startupData := &startupData{ptr: rtn.blob}
+	s.startupData = startupData
 
-	for _, s := range charArray {
-		C.free(unsafe.Pointer(s))
-	}
-	defer C.free(unsafe.Pointer(cOrigin))
-
-	if rtn.blob == nil {
-		return nil, newJSError(rtn.error)
-	}
-
-	s.dataPtr = rtn.blob
-
-	return &StartupData{
-		ptr: rtn.blob,
-	}, nil
+	return startupData, nil
 }
 
 func (s *SnapshotCreator) Dispose(iso *Isolate) {
-	C.SnapshotBlobDelete(iso.ptr, s.dataPtr)
+	C.SnapshotBlobDelete(iso.ptr, s.startupData.ptr)
 }

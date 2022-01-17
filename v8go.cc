@@ -305,15 +305,20 @@ SnapshotCreatorPtr NewSnapshotCreator() {
   return creator;
 }
 
-RtnSnapshotBlob CreateSnapshotV2(SnapshotCreatorPtr ptr,
+void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator) {
+  delete snapshotCreator;
+}
+
+RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,
                                       const char* source,
                                       const char* origin,
                                       int function_code_handling) {
-  Isolate* iso = ptr->GetIsolate();
+  Isolate* iso = snapshotCreator->GetIsolate();
   size_t index;
   RtnSnapshotBlob rtn = {};
 
   {
+    bool fail = false;
     HandleScope handle_scope(iso);
     Local<Context> ctx = Context::New(iso);
     TryCatch try_catch(iso);
@@ -329,154 +334,30 @@ RtnSnapshotBlob CreateSnapshotV2(SnapshotCreatorPtr ptr,
       ScriptOrigin script_origin(ogn);
       Local<Script> script;
       if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-        rtn.error = ExceptionError(try_catch, iso, ctx);
-        return rtn;
+        fail = true;
       }
 
       Local<Value> result;
       if (!script->Run(ctx).ToLocal(&result)) {
-        rtn.error = ExceptionError(try_catch, iso, ctx);
-        return rtn;
+        fail = true;
       }
     } else {
+      fail = true;
+    }
+
+    if (fail) {
       rtn.error = ExceptionError(try_catch, iso, ctx);
       return rtn;
     }
 
-    ptr->SetDefaultContext(ctx);
-    index = ptr->AddContext(ctx);
+    snapshotCreator->SetDefaultContext(ctx);
+    index = snapshotCreator->AddContext(ctx);
   }
 
   // CreateBlob cannot be called within a HandleScope
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
-  StartupData startup_data = ptr->CreateBlob(
-      SnapshotCreator::FunctionCodeHandling(function_code_handling));
-  // std::cout << "Print Data: CreateSnapshotV2" << std::endl;
-  // print_data(&startup_data);
-
-  SnapshotBlob* sb = new SnapshotBlob;
-  sb->data = startup_data.data;
-  sb->raw_size = startup_data.raw_size;
-  sb->index = index;
-  rtn.blob = sb;
-  delete ptr;
-  return rtn;
-}
-
-RtnSnapshotBlob CreateSnapshotV3(SnapshotCreatorPtr ptr,
-                                      const char** scripts,
-                                      int scripts_size,
-                                      const char* origin,
-                                      int function_code_handling) {
-
-  Isolate* iso = ptr->GetIsolate();
-  size_t index;
-  RtnSnapshotBlob rtn = {};
-
-  {
-    HandleScope handle_scope(iso);
-    Local<Context> ctx = Context::New(iso);
-    TryCatch try_catch(iso);
-    Context::Scope context_scope(ctx);
-
-    v8::Local<v8::String> resource_name =
-      v8::String::NewFromUtf8(iso, "<embedded>").ToLocalChecked();
-
-    // if (!maybeOgn.ToLocal(&org)) {
-    //   rtn.error = ExceptionError(try_catch, iso, ctx);
-    //   return rtn;
-    // }
-
-    for (int i = 0; i < scripts_size; i++) {
-      const char* source = scripts[i];
-      MaybeLocal<String> maybeSrc =
-        String::NewFromUtf8(iso, source, NewStringType::kNormal);
-      Local<String> src;
-      if (maybeSrc.ToLocal(&src)) {
-        // String::Utf8Value value(iso, src);
-        // std::cout << *value << std::endl;
-        ScriptOrigin script_origin(resource_name);
-        Local<Script> script;
-        if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-          rtn.error = ExceptionError(try_catch, iso, ctx);
-          return rtn;
-        }
-
-        Local<Value> result;
-        if (!script->Run(ctx).ToLocal(&result)) {
-          rtn.error = ExceptionError(try_catch, iso, ctx);
-          return rtn;
-        }
-      } else {
-        rtn.error = ExceptionError(try_catch, iso, ctx);
-        return rtn;
-      }
-    }
-
-    ptr->SetDefaultContext(ctx);
-    index = ptr->AddContext(ctx);
-  }
-
-  // CreateBlob cannot be called within a HandleScope
-  //  kKeep - keeps any compiled functions
-  //  kClear - does not keep any compiled functions
-  StartupData startup_data = ptr->CreateBlob(
-      SnapshotCreator::FunctionCodeHandling(function_code_handling));
-  SnapshotBlob* sb = new SnapshotBlob;
-  sb->data = startup_data.data;
-  sb->raw_size = startup_data.raw_size;
-  sb->index = index;
-  rtn.blob = sb;
-  delete ptr;
-  return rtn;
-}
-
-RtnSnapshotBlob CreateSnapshot(const char* source,
-                               const char* origin,
-                               int function_code_handling) {
-  SnapshotCreator creator;
-  Isolate* iso = creator.GetIsolate();
-  size_t index;
-  RtnSnapshotBlob rtn = {};
-
-  {
-    HandleScope handle_scope(iso);
-    Local<Context> ctx = Context::New(iso);
-    TryCatch try_catch(iso);
-    Context::Scope context_scope(ctx);
-
-    MaybeLocal<String> maybeSrc =
-        String::NewFromUtf8(iso, source, NewStringType::kNormal);
-    MaybeLocal<String> maybeOgn =
-        String::NewFromUtf8(iso, origin, NewStringType::kNormal);
-    Local<String> src, ogn;
-    if (maybeSrc.ToLocal(&src) && maybeOgn.ToLocal(&ogn)) {
-      ScriptOrigin script_origin(ogn);
-      Local<Script> script;
-      if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-        rtn.error = ExceptionError(try_catch, iso, ctx);
-        return rtn;
-      }
-
-      Local<Value> result;
-      if (!script->Run(ctx).ToLocal(&result)) {
-        rtn.error = ExceptionError(try_catch, iso, ctx);
-        return rtn;
-      }
-    } else {
-      rtn.error = ExceptionError(try_catch, iso, ctx);
-      return rtn;
-    }
-
-    creator.SetDefaultContext(ctx);
-    index = creator.AddContext(ctx);
-  }
-
-  // CreateBlob cannot be called within a HandleScope
-  //  kKeep - keeps any compiled functions
-  //  kClear - does not keep any compiled functions
-  StartupData startup_data = creator.CreateBlob(
+  StartupData startup_data = snapshotCreator->CreateBlob(
       SnapshotCreator::FunctionCodeHandling(function_code_handling));
 
   SnapshotBlob* sb = new SnapshotBlob;
@@ -484,6 +365,7 @@ RtnSnapshotBlob CreateSnapshot(const char* source,
   sb->raw_size = startup_data.raw_size;
   sb->index = index;
   rtn.blob = sb;
+  delete snapshotCreator;
   return rtn;
 }
 
