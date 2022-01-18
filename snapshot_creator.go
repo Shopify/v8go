@@ -9,7 +9,6 @@ package v8go
 import "C"
 import (
 	"errors"
-	"unsafe"
 )
 
 type FunctionCodeHandling int
@@ -32,6 +31,8 @@ func (s *StartupData) Dispose() {
 
 type SnapshotCreator struct {
 	ptr   C.SnapshotCreatorPtr
+	iso   *Isolate
+	ctx   *Context
 	index C.size_t
 }
 
@@ -40,24 +41,25 @@ func NewSnapshotCreator() *SnapshotCreator {
 		C.Init()
 	})
 
+	rtn := C.NewSnapshotCreator()
+
 	return &SnapshotCreator{
-		ptr: C.NewSnapshotCreator(),
+		ptr: rtn.creator,
+		iso: &Isolate{ptr: rtn.iso},
 	}
 }
 
-func (s *SnapshotCreator) AddContext(source, origin string) error {
-	cSource := C.CString(source)
-	cOrigin := C.CString(origin)
-	defer C.free(unsafe.Pointer(cSource))
-	defer C.free(unsafe.Pointer(cOrigin))
+func (s *SnapshotCreator) GetIsolate() *Isolate {
+	return s.iso
+}
 
-	rtn := C.AddContext(s.ptr, cSource, cOrigin)
-
-	if rtn.error.msg != nil {
-		return newJSError(rtn.error)
+func (s *SnapshotCreator) AddContext(ctx *Context) error {
+	if s.ptr == nil {
+		return errors.New("v8go: Cannot add context to snapshot creator after creating the blob")
 	}
 
-	s.index = rtn.index
+	s.index = C.AddContext(s.ptr, ctx.ptr)
+	s.ctx = ctx
 
 	return nil
 }
@@ -67,9 +69,11 @@ func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupDat
 		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
 	}
 
-	rtn := C.CreateBlob(s.ptr, C.int(functionCode))
+	rtn := C.CreateBlob(s.ptr, s.ctx.ptr, C.int(functionCode))
 
 	s.ptr = nil
+	s.ctx.ptr = nil
+	s.iso.ptr = nil
 
 	return &StartupData{ptr: rtn, index: s.index}, nil
 }

@@ -293,7 +293,8 @@ RtnUnboundScript IsolateCompileUnboundScript(IsolatePtr iso,
 
 /********** SnapshotCreator **********/
 
-SnapshotCreatorPtr NewSnapshotCreator() {
+RtnSnapshotCreator NewSnapshotCreator() {
+  RtnSnapshotCreator rtn = {};
   SnapshotCreator* creator = new SnapshotCreator;
   Isolate* iso = creator->GetIsolate();
   {
@@ -302,62 +303,31 @@ SnapshotCreatorPtr NewSnapshotCreator() {
     creator->SetDefaultContext(ctx);
   }
 
-  return creator;
+  rtn.creator = creator;
+  rtn.iso = iso;
+
+  return rtn;
 }
 
 void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator) {
   delete snapshotCreator;
 }
 
-RtnSnapshotAddContext AddContext(SnapshotCreatorPtr snapshotCreator,
-                                 const char* source,
-                                 const char* origin) {
-  RtnSnapshotAddContext rtn = {};
-  Isolate* iso = snapshotCreator->GetIsolate();
-  size_t index;
-
-  {
-    bool fail = false;
-    HandleScope handle_scope(iso);
-    Local<Context> ctx = Context::New(iso);
-    TryCatch try_catch(iso);
-    Context::Scope context_scope(ctx);
-
-    MaybeLocal<String> maybeSrc =
-        String::NewFromUtf8(iso, source, NewStringType::kNormal);
-    MaybeLocal<String> maybeOgn =
-        String::NewFromUtf8(iso, origin, NewStringType::kNormal);
-    Local<String> src, ogn;
-    if (maybeSrc.ToLocal(&src) && maybeOgn.ToLocal(&ogn)) {
-      String::Utf8Value value(iso, src);
-      ScriptOrigin script_origin(ogn);
-      Local<Script> script;
-      if (!Script::Compile(ctx, src, &script_origin).ToLocal(&script)) {
-        fail = true;
-      }
-
-      Local<Value> result;
-      if (!script->Run(ctx).ToLocal(&result)) {
-        fail = true;
-      }
-    } else {
-      fail = true;
-    }
-
-    if (fail) {
-      rtn.error = ExceptionError(try_catch, iso, ctx);
-      return rtn;
-    }
-
-    index = snapshotCreator->AddContext(ctx);
-  }
-  rtn.index = index;
-  return rtn;
+size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx) {
+  Isolate* iso = ctx->iso;
+  Locker locker(iso);
+  Isolate::Scope isolate_scope(iso);
+  HandleScope handle_scope(iso);
+  Local<Context> local_ctx = ctx->ptr.Get(iso);
+  Context::Scope context_scope(local_ctx);
+  return snapshotCreator->AddContext(local_ctx);
+  ;
 }
 
 SnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                         ContextPtr ctx,
                          int function_code_handling) {
-  // CreateBlob cannot be called within a HandleScope
+  ContextFree(ctx);
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
   StartupData startup_data = snapshotCreator->CreateBlob(
