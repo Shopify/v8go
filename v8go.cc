@@ -302,10 +302,10 @@ void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator) {
   delete snapshotCreator;
 }
 
-RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,
-                               const char* source,
-                               const char* origin,
-                               int function_code_handling) {
+RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                           const char* source,
+                           const char* origin,
+                           int function_code_handling) {
   Isolate* iso = snapshotCreator->GetIsolate();
   size_t index;
   RtnSnapshotBlob rtn = {};

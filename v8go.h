@@ -157,10 +157,10 @@ extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 extern void SnapshotBlobDelete(SnapshotBlob* ptr);
 extern SnapshotCreatorPtr NewSnapshotCreator();
 extern void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator);
-extern RtnSnapshotBlob CreateSnapshot(SnapshotCreatorPtr snapshotCreator,
-                                      const char* source,
-                                      const char* origin,
-                                      int function_code_handling);
+extern RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                                  const char* source,
+                                  const char* origin,
+                                  int function_code_handling);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 

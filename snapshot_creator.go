@@ -53,7 +53,7 @@ func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCod
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
-	rtn := C.CreateSnapshot(s.ptr, cSource, cOrigin, C.int(functionCode))
+	rtn := C.CreateBlob(s.ptr, cSource, cOrigin, C.int(functionCode))
 
 	if rtn.blob == nil {
 		return nil, newJSError(rtn.error)
