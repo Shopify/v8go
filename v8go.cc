@@ -295,6 +295,13 @@ RtnUnboundScript IsolateCompileUnboundScript(IsolatePtr iso,
 
 SnapshotCreatorPtr NewSnapshotCreator() {
   SnapshotCreator* creator = new SnapshotCreator;
+  Isolate* iso = creator->GetIsolate();
+  {
+    HandleScope handle_scope(iso);
+    Local<Context> ctx = Context::New(iso);
+    creator->SetDefaultContext(ctx);
+  }
+
   return creator;
 }
 
@@ -302,13 +309,12 @@ void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator) {
   delete snapshotCreator;
 }
 
-RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
-                           const char* source,
-                           const char* origin,
-                           int function_code_handling) {
+RtnSnapshotAddContext AddContext(SnapshotCreatorPtr snapshotCreator,
+                                 const char* source,
+                                 const char* origin) {
+  RtnSnapshotAddContext rtn = {};
   Isolate* iso = snapshotCreator->GetIsolate();
   size_t index;
-  RtnSnapshotBlob rtn = {};
 
   {
     bool fail = false;
@@ -343,10 +349,14 @@ RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
       return rtn;
     }
 
-    snapshotCreator->SetDefaultContext(ctx);
     index = snapshotCreator->AddContext(ctx);
   }
+  rtn.index = index;
+  return rtn;
+}
 
+SnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                         int function_code_handling) {
   // CreateBlob cannot be called within a HandleScope
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
@@ -356,10 +366,8 @@ RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
   SnapshotBlob* sb = new SnapshotBlob;
   sb->data = startup_data.data;
   sb->raw_size = startup_data.raw_size;
-  sb->index = index;
-  rtn.blob = sb;
   delete snapshotCreator;
-  return rtn;
+  return sb;
 }
 
 void SnapshotBlobDelete(SnapshotBlob* ptr) {

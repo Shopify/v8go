@@ -20,7 +20,8 @@ const (
 )
 
 type StartupData struct {
-	ptr *C.SnapshotBlob
+	ptr   *C.SnapshotBlob
+	index C.size_t
 }
 
 func (s *StartupData) Dispose() {
@@ -30,7 +31,8 @@ func (s *StartupData) Dispose() {
 }
 
 type SnapshotCreator struct {
-	ptr C.SnapshotCreatorPtr
+	ptr   C.SnapshotCreatorPtr
+	index C.size_t
 }
 
 func NewSnapshotCreator() *SnapshotCreator {
@@ -43,25 +45,33 @@ func NewSnapshotCreator() *SnapshotCreator {
 	}
 }
 
-func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
-	if s.ptr == nil {
-		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
-	}
-
+func (s *SnapshotCreator) AddContext(source, origin string) error {
 	cSource := C.CString(source)
 	cOrigin := C.CString(origin)
 	defer C.free(unsafe.Pointer(cSource))
 	defer C.free(unsafe.Pointer(cOrigin))
 
-	rtn := C.CreateBlob(s.ptr, cSource, cOrigin, C.int(functionCode))
+	rtn := C.AddContext(s.ptr, cSource, cOrigin)
 
-	if rtn.blob == nil {
-		return nil, newJSError(rtn.error)
+	if rtn.error.msg != nil {
+		return newJSError(rtn.error)
 	}
+
+	s.index = rtn.index
+
+	return nil
+}
+
+func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupData, error) {
+	if s.ptr == nil {
+		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
+	}
+
+	rtn := C.CreateBlob(s.ptr, C.int(functionCode))
 
 	s.ptr = nil
 
-	return &StartupData{ptr: rtn.blob}, nil
+	return &StartupData{ptr: rtn, index: s.index}, nil
 }
 
 func (s *SnapshotCreator) Dispose() {

@@ -12,13 +12,15 @@ import (
 
 func TestCreateSnapshot(t *testing.T) {
 	snapshotCreator := v8.NewSnapshotCreator()
-
-	data, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	err := snapshotCreator.AddContext("function run() { return 1 };", "script.js")
 	fatalIf(t, err)
+
+	data, err := snapshotCreator.Create(v8.FunctionCodeHandlingKlear)
+	fatalIf(t, err)
+	defer data.Dispose()
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
-	defer data.Dispose()
 
 	ctx := v8.NewContext(iso)
 	defer ctx.Close()
@@ -44,34 +46,37 @@ func TestCreateSnapshot(t *testing.T) {
 func TestCreateSnapshotErrorAfterSuccessfullCreate(t *testing.T) {
 	snapshotCreator := v8.NewSnapshotCreator()
 
-	data, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
-	defer data.Dispose()
+	err := snapshotCreator.AddContext("function run() { return 1 };", "script.js")
 	fatalIf(t, err)
 
-	_, err = snapshotCreator.Create("function run2() { return 2 };", "script2.js", v8.FunctionCodeHandlingKlear)
+	data, err := snapshotCreator.Create(v8.FunctionCodeHandlingKlear)
+	fatalIf(t, err)
+	defer data.Dispose()
+
+	_, err = snapshotCreator.Create(v8.FunctionCodeHandlingKlear)
 	if err == nil {
 		t.Error("Creating snapshot should have fail")
 	}
 }
 
-func TestCreateSnapshotFail(t *testing.T) {
+func TestAddContextFail(t *testing.T) {
 	snapshotCreator := v8.NewSnapshotCreator()
 	defer snapshotCreator.Dispose()
 
-	_, err := snapshotCreator.Create("uidygwuiwgduw", "script.js", v8.FunctionCodeHandlingKlear)
+	err := snapshotCreator.AddContext("feuihyvfeuyfeu", "script.js")
 	if err == nil {
-		t.Error("Creating snapshot should have fail")
+		t.Error("add context should have fail")
 	}
 }
 
 func TestCreateSnapshotFailAndReuse(t *testing.T) {
 	snapshotCreator := v8.NewSnapshotCreator()
-	_, err := snapshotCreator.Create("uidygwuiwgduw", "script.js", v8.FunctionCodeHandlingKlear)
+	err := snapshotCreator.AddContext("feuihyvfeuyfeu", "script.js")
 	if err == nil {
-		t.Error("Creating snapshot should have fail")
+		t.Error("add context should have fail")
 	}
-
-	data, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
+	err = snapshotCreator.AddContext("function run() { return 1 };", "script.js")
+	data, err := snapshotCreator.Create(v8.FunctionCodeHandlingKlear)
 	fatalIf(t, err)
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))

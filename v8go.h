@@ -79,13 +79,12 @@ typedef struct {
 typedef struct {
   const char* data;
   int raw_size;
-  size_t index;
 } SnapshotBlob;
 
 typedef struct {
-  SnapshotBlob* blob;
+  size_t index;
   RtnError error;
-} RtnSnapshotBlob;
+} RtnSnapshotAddContext;
 
 typedef struct {
   ScriptCompilerCachedData cachedData;
@@ -157,10 +156,11 @@ extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 extern void SnapshotBlobDelete(SnapshotBlob* ptr);
 extern SnapshotCreatorPtr NewSnapshotCreator();
 extern void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator);
-extern RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
-                                  const char* source,
-                                  const char* origin,
-                                  int function_code_handling);
+extern RtnSnapshotAddContext AddContext(SnapshotCreatorPtr snapshotCreator,
+                                        const char* source,
+                                        const char* origin);
+extern SnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                                int function_code_handling);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 
