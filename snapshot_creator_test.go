@@ -98,36 +98,3 @@ func TestCreateSnapshotFailAndReuse(t *testing.T) {
 		t.Fatal("invalid val")
 	}
 }
-
-func TestCreateSnapshotWithIsolateOption(t *testing.T) {
-	iso1 := v8.NewIsolate()
-	defer iso1.Dispose()
-	snapshotCreator := v8.NewSnapshotCreator(v8.WithIsolate(iso1))
-
-	data, err := snapshotCreator.Create("function run() { return 1 };", "script.js", v8.FunctionCodeHandlingKlear)
-	fatalIf(t, err)
-
-	iso := v8.NewIsolate(v8.WithStartupData(data))
-	defer iso.Dispose()
-	defer data.Dispose()
-
-	ctx := v8.NewContext(iso)
-	defer ctx.Close()
-
-	runVal, err := ctx.Global().Get("run")
-	if err != nil {
-		panic(err)
-	}
-
-	fn, err := runVal.AsFunction()
-	if err != nil {
-		panic(err)
-	}
-	val, err := fn.Call(v8.Undefined(iso))
-	if err != nil {
-		panic(err)
-	}
-	if val.String() != "1" {
-		t.Fatal("invalid val")
-	}
-}

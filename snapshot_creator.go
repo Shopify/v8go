@@ -29,43 +29,17 @@ func (s *StartupData) Dispose() {
 	}
 }
 
-type snapshotCreatorOptions struct {
-	iso         *Isolate
-	exitingBlob *StartupData
-}
-
-type creatorOptions func(*snapshotCreatorOptions)
-
-func WithIsolate(iso *Isolate) creatorOptions {
-	return func(options *snapshotCreatorOptions) {
-		options.iso = iso
-	}
-}
-
 type SnapshotCreator struct {
 	ptr C.SnapshotCreatorPtr
-	*snapshotCreatorOptions
 }
 
-func NewSnapshotCreator(opts ...creatorOptions) *SnapshotCreator {
+func NewSnapshotCreator() *SnapshotCreator {
 	v8once.Do(func() {
 		C.Init()
 	})
 
-	options := &snapshotCreatorOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	var cOptions C.SnapshotCreatorOptions
-
-	if options.iso != nil {
-		cOptions.iso = options.iso.ptr
-	}
-
 	return &SnapshotCreator{
-		ptr:                    C.NewSnapshotCreator(cOptions),
-		snapshotCreatorOptions: options,
+		ptr: C.NewSnapshotCreator(),
 	}
 }
 
@@ -86,10 +60,6 @@ func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCod
 	}
 
 	s.ptr = nil
-
-	if s.snapshotCreatorOptions.iso != nil {
-		s.snapshotCreatorOptions.iso.ptr = nil
-	}
 
 	return &StartupData{ptr: rtn.blob}, nil
 }
