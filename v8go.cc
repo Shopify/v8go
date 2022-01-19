@@ -306,7 +306,6 @@ size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx) {
   Local<Context> local_ctx = ctx->ptr.Get(iso);
   Context::Scope context_scope(local_ctx);
   return snapshotCreator->AddContext(local_ctx);
-  ;
 }
 
 RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
@@ -321,10 +320,10 @@ RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
 
   int length = startup_data.raw_size;
 
-  char* data = (char*)malloc(length);
-  memcpy(data, startup_data.data, length);
+  // char* data = (char*)malloc(length);
+  // memcpy(data, startup_data.data, length);
 
-  rtn.data = data;
+  rtn.data = startup_data.data;
   rtn.raw_size = length;
   delete snapshotCreator;
   return rtn;
