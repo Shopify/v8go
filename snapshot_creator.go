@@ -73,6 +73,10 @@ func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupDat
 		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
 	}
 
+	if s.ctx == nil {
+		return nil, errors.New("v8go: Cannot create a snapshot without first adding a context")
+	}
+
 	rtn := C.CreateBlob(s.ptr, s.ctx.ptr, C.int(functionCode))
 
 	s.ptr = nil

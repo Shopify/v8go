@@ -82,3 +82,14 @@ func TestCreateSnapshotErrorAfterSuccessfullCreate(t *testing.T) {
 		t.Error("Creating snapshot should have fail")
 	}
 }
+
+func TestCreateSnapshotErrorIfNoContextIsAdded(t *testing.T) {
+	snapshotCreator := v8.NewSnapshotCreator()
+	defer snapshotCreator.Dispose()
+
+	_, err := snapshotCreator.Create(v8.FunctionCodeHandlingKlear)
+
+	if err == nil {
+		t.Error("Creating a snapshop should have fail")
+	}
+}
