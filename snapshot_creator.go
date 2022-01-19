@@ -9,7 +9,6 @@ package v8go
 import "C"
 import (
 	"errors"
-	"unsafe"
 )
 
 type FunctionCodeHandling int
@@ -20,7 +19,8 @@ const (
 )
 
 type StartupData struct {
-	ptr *C.SnapshotBlob
+	ptr   *C.RtnSnapshotBlob
+	index C.size_t
 }
 
 func (s *StartupData) Dispose() {
@@ -29,69 +29,57 @@ func (s *StartupData) Dispose() {
 	}
 }
 
-type snapshotCreatorOptions struct {
-	iso         *Isolate
-	exitingBlob *StartupData
-}
-
-type creatorOptions func(*snapshotCreatorOptions)
-
-func WithIsolate(iso *Isolate) creatorOptions {
-	return func(options *snapshotCreatorOptions) {
-		options.iso = iso
-	}
-}
-
 type SnapshotCreator struct {
-	ptr C.SnapshotCreatorPtr
-	*snapshotCreatorOptions
+	ptr   C.SnapshotCreatorPtr
+	iso   *Isolate
+	ctx   *Context
+	index C.size_t
 }
 
-func NewSnapshotCreator(opts ...creatorOptions) *SnapshotCreator {
+func NewSnapshotCreator() *SnapshotCreator {
 	v8once.Do(func() {
 		C.Init()
 	})
 
-	options := &snapshotCreatorOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	var cOptions C.SnapshotCreatorOptions
-
-	if options.iso != nil {
-		cOptions.iso = options.iso.ptr
-	}
+	rtn := C.NewSnapshotCreator()
 
 	return &SnapshotCreator{
-		ptr:                    C.NewSnapshotCreator(cOptions),
-		snapshotCreatorOptions: options,
+		ptr: rtn.creator,
+		iso: &Isolate{ptr: rtn.iso},
 	}
 }
 
-func (s *SnapshotCreator) Create(source, origin string, functionCode FunctionCodeHandling) (*StartupData, error) {
+func (s *SnapshotCreator) GetIsolate() (*Isolate, error) {
+	if s.ptr == nil {
+		return nil, errors.New("v8go: Cannot get Isolate after creating the blob")
+	}
+
+	return s.iso, nil
+}
+
+func (s *SnapshotCreator) AddContext(ctx *Context) error {
+	if s.ptr == nil {
+		return errors.New("v8go: Cannot add context to snapshot creator after creating the blob")
+	}
+
+	s.index = C.AddContext(s.ptr, ctx.ptr)
+	s.ctx = ctx
+
+	return nil
+}
+
+func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupData, error) {
 	if s.ptr == nil {
 		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
 	}
 
-	cSource := C.CString(source)
-	cOrigin := C.CString(origin)
-	defer C.free(unsafe.Pointer(cSource))
-	defer C.free(unsafe.Pointer(cOrigin))
-
-	rtn := C.CreateSnapshot(s.ptr, cSource, cOrigin, C.int(functionCode))
-
-	if rtn.blob == nil {
-		return nil, newJSError(rtn.error)
-	}
+	rtn := C.CreateBlob(s.ptr, s.ctx.ptr, C.int(functionCode))
 
 	s.ptr = nil
+	s.ctx.ptr = nil
+	s.iso.ptr = nil
 
-	if s.snapshotCreatorOptions.iso != nil {
-		s.snapshotCreatorOptions.iso.ptr = nil
-	}
-
-	return &StartupData{ptr: rtn.blob}, nil
+	return &StartupData{ptr: rtn, index: s.index}, nil
 }
 
 func (s *SnapshotCreator) Dispose() {

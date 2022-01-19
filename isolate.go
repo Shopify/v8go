@@ -73,18 +73,16 @@ func NewIsolate(opts ...createOptions) *Isolate {
 		opt(params)
 	}
 
-	var iso *Isolate
+	var cOptions C.IsolateOptions
+
 	if params.startupData != nil {
-		iso = &Isolate{
-			ptr:          C.NewIsolateWithCreateParams(params.startupData.ptr),
-			cbs:          make(map[int]FunctionCallback),
-			createParams: params,
-		}
-	} else {
-		iso = &Isolate{
-			ptr: C.NewIsolate(),
-			cbs: make(map[int]FunctionCallback),
-		}
+		cOptions.snapshot_blob = params.startupData.ptr
+	}
+
+	iso := &Isolate{
+		ptr:          C.NewIsolate(cOptions),
+		cbs:          make(map[int]FunctionCallback),
+		createParams: params,
 	}
 	iso.null = newValueNull(iso)
 	iso.undefined = newValueUndefined(iso)
