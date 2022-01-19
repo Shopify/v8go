@@ -76,10 +76,7 @@ func NewIsolate(opts ...createOptions) *Isolate {
 	var cOptions C.IsolateOptions
 
 	if params.startupData != nil {
-		// p := C.CString(string(params.startupData.data))
-		cOptions.snapshot_blob_data = params.startupData.data
-		// defer C.free(unsafe.Pointer(p))
-		cOptions.snapshot_blob_raw_size = params.startupData.raw_size
+		cOptions.snapshot_blob = params.startupData.ptr
 	}
 
 	iso := &Isolate{

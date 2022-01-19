@@ -19,9 +19,14 @@ const (
 )
 
 type StartupData struct {
-	data     *C.char
-	raw_size C.int
-	index    C.size_t
+	ptr   *C.RtnSnapshotBlob
+	index C.size_t
+}
+
+func (s *StartupData) Dispose() {
+	if s.ptr != nil {
+		C.SnapshotBlobDelete(s.ptr)
+	}
 }
 
 type SnapshotCreator struct {
@@ -70,11 +75,7 @@ func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupDat
 	s.ctx.ptr = nil
 	s.iso.ptr = nil
 
-	raw_size := rtn.raw_size
-	// data := C.GoBytes(unsafe.Pointer(rtn.data), raw_size)
-	// defer C.free(unsafe.Pointer(rtn.data))
-
-	return &StartupData{data: rtn.data, raw_size: raw_size, index: s.index}, nil
+	return &StartupData{ptr: rtn, index: s.index}, nil
 }
 
 func (s *SnapshotCreator) Dispose() {

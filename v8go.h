@@ -92,8 +92,7 @@ typedef struct {
 } CompileOptions;
 
 typedef struct {
-  const char* snapshot_blob_data;
-  int snapshot_blob_raw_size;
+  RtnSnapshotBlob* snapshot_blob;
 } IsolateOptions;
 
 typedef struct {
@@ -157,12 +156,13 @@ extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
+extern void SnapshotBlobDelete(RtnSnapshotBlob* ptr);
 extern RtnSnapshotCreator NewSnapshotCreator();
 extern void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator);
 extern size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx);
-extern RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
-                                  ContextPtr ctx,
-                                  int function_code_handling);
+extern RtnSnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                                   ContextPtr ctx,
+                                   int function_code_handling);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 

@@ -158,9 +158,9 @@ IsolatePtr NewIsolate(IsolateOptions options) {
   params.array_buffer_allocator = default_allocator;
 
   StartupData* startup_data;
-  if (options.snapshot_blob_data) {
-    startup_data = new StartupData{options.snapshot_blob_data,
-                                   options.snapshot_blob_raw_size};
+  if (options.snapshot_blob != nullptr) {
+    startup_data = new StartupData{options.snapshot_blob->data,
+                                   options.snapshot_blob->raw_size};
     params.snapshot_blob = startup_data;
   } else {
     startup_data = nullptr;
@@ -308,25 +308,25 @@ size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx) {
   return snapshotCreator->AddContext(local_ctx);
 }
 
-RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
-                           ContextPtr ctx,
-                           int function_code_handling) {
-  RtnSnapshotBlob rtn = {};
+RtnSnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                            ContextPtr ctx,
+                            int function_code_handling) {
   ContextFree(ctx);
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
   StartupData startup_data = snapshotCreator->CreateBlob(
       SnapshotCreator::FunctionCodeHandling(function_code_handling));
 
-  int length = startup_data.raw_size;
-
-  // char* data = (char*)malloc(length);
-  // memcpy(data, startup_data.data, length);
-
-  rtn.data = startup_data.data;
-  rtn.raw_size = length;
+  RtnSnapshotBlob* sb = new RtnSnapshotBlob;
+  sb->data = startup_data.data;
+  sb->raw_size = startup_data.raw_size;
   delete snapshotCreator;
-  return rtn;
+  return sb;
+}
+
+void SnapshotBlobDelete(RtnSnapshotBlob* ptr) {
+  delete[] ptr->data;
+  delete ptr;
 }
 
 /********** Exceptions & Errors **********/

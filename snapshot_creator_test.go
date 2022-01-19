@@ -23,6 +23,7 @@ func TestCreateSnapshot(t *testing.T) {
 
 	data, err := snapshotCreator.Create(v8.FunctionCodeHandlingKlear)
 	fatalIf(t, err)
+	defer data.Dispose()
 
 	iso := v8.NewIsolate(v8.WithStartupData(data))
 	defer iso.Dispose()
@@ -59,8 +60,9 @@ func TestCreateSnapshotErrorAfterSuccessfullCreate(t *testing.T) {
 	err := snapshotCreator.AddContext(snapshotCreatoCtx)
 	fatalIf(t, err)
 
-	_, err = snapshotCreator.Create(v8.FunctionCodeHandlingKlear)
+	data, err := snapshotCreator.Create(v8.FunctionCodeHandlingKlear)
 	fatalIf(t, err)
+	defer data.Dispose()
 
 	err = snapshotCreator.AddContext(snapshotCreatoCtx)
 	if err == nil {
