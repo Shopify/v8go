@@ -675,13 +675,8 @@ ContextPtr NewContextFromSnapShot(IsolatePtr iso,
   // side to lookup the context in the context registry. We use slot 1 as slot 0
   // has special meaning for the Chrome debugger.
 
-  MaybeLocal<Context> maybe_local_ctx =
-      Context::FromSnapshot(iso, snapshot_blob_index);
-
-  Local<Context> local_ctx;
-  if (!maybe_local_ctx.ToLocal(&local_ctx)) {
-    std::cout << "Error" << std::endl;
-  }
+  Local<Context> local_ctx =
+      Context::FromSnapshot(iso, snapshot_blob_index).ToLocalChecked();
   local_ctx->SetEmbedderData(1, Integer::New(iso, ref));
 
   m_ctx* ctx = new m_ctx;
