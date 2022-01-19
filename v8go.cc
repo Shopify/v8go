@@ -153,14 +153,19 @@ void Init() {
   return;
 }
 
-IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
+IsolatePtr NewIsolate(IsolateOptions options) {
   Isolate::CreateParams params;
-
-  StartupData* startup_data =
-      new StartupData{snapshot_blob->data, snapshot_blob->raw_size};
-
-  params.snapshot_blob = startup_data;
   params.array_buffer_allocator = default_allocator;
+
+  StartupData* startup_data;
+  if (options.snapshot_blob_data) {
+    startup_data = new StartupData{options.snapshot_blob_data,
+                                   options.snapshot_blob_raw_size};
+    params.snapshot_blob = startup_data;
+  } else {
+    startup_data = nullptr;
+  }
+
   Isolate* iso = Isolate::New(params);
   Locker locker(iso);
   Isolate::Scope isolate_scope(iso);
@@ -173,26 +178,6 @@ IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* snapshot_blob) {
   ctx->ptr.Reset(iso, Context::New(iso));
   ctx->iso = iso;
   ctx->startup_data = startup_data;
-  iso->SetData(0, ctx);
-
-  return iso;
-}
-
-IsolatePtr NewIsolate() {
-  Isolate::CreateParams params;
-  params.array_buffer_allocator = default_allocator;
-  Isolate* iso = Isolate::New(params);
-  Locker locker(iso);
-  Isolate::Scope isolate_scope(iso);
-  HandleScope handle_scope(iso);
-
-  iso->SetCaptureStackTraceForUncaughtExceptions(true);
-
-  // Create a Context for internal use
-  m_ctx* ctx = new m_ctx;
-  ctx->ptr.Reset(iso, Context::New(iso));
-  ctx->iso = iso;
-  ctx->startup_data = nullptr;
   iso->SetData(0, ctx);
 
   return iso;
@@ -324,25 +309,25 @@ size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx) {
   ;
 }
 
-SnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
-                         ContextPtr ctx,
-                         int function_code_handling) {
+RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                           ContextPtr ctx,
+                           int function_code_handling) {
+  RtnSnapshotBlob rtn = {};
   ContextFree(ctx);
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
   StartupData startup_data = snapshotCreator->CreateBlob(
       SnapshotCreator::FunctionCodeHandling(function_code_handling));
 
-  SnapshotBlob* sb = new SnapshotBlob;
-  sb->data = startup_data.data;
-  sb->raw_size = startup_data.raw_size;
-  delete snapshotCreator;
-  return sb;
-}
+  int length = startup_data.raw_size;
 
-void SnapshotBlobDelete(SnapshotBlob* ptr) {
-  delete[] ptr->data;
-  delete ptr;
+  char* data = (char*)malloc(length);
+  memcpy(data, startup_data.data, length);
+
+  rtn.data = data;
+  rtn.raw_size = length;
+  delete snapshotCreator;
+  return rtn;
 }
 
 /********** Exceptions & Errors **********/
@@ -691,8 +676,13 @@ ContextPtr NewContextFromSnapShot(IsolatePtr iso,
   // side to lookup the context in the context registry. We use slot 1 as slot 0
   // has special meaning for the Chrome debugger.
 
-  Local<Context> local_ctx =
-      Context::FromSnapshot(iso, snapshot_blob_index).ToLocalChecked();
+  MaybeLocal<Context> maybe_local_ctx =
+      Context::FromSnapshot(iso, snapshot_blob_index);
+
+  Local<Context> local_ctx;
+  if (!maybe_local_ctx.ToLocal(&local_ctx)) {
+    std::cout << "Error" << std::endl;
+  }
   local_ctx->SetEmbedderData(1, Integer::New(iso, ref));
 
   m_ctx* ctx = new m_ctx;

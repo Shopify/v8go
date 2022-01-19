@@ -79,7 +79,7 @@ typedef struct {
 typedef struct {
   const char* data;
   int raw_size;
-} SnapshotBlob;
+} RtnSnapshotBlob;
 
 typedef struct {
   SnapshotCreatorPtr creator;
@@ -90,6 +90,11 @@ typedef struct {
   ScriptCompilerCachedData cachedData;
   int compileOption;
 } CompileOptions;
+
+typedef struct {
+  const char* snapshot_blob_data;
+  int snapshot_blob_raw_size;
+} IsolateOptions;
 
 typedef struct {
   CpuProfilerPtr ptr;
@@ -145,21 +150,19 @@ typedef struct {
 } ValueBigInt;
 
 extern void Init();
-extern IsolatePtr NewIsolate();
-extern IsolatePtr NewIsolateWithCreateParams(SnapshotBlob* ptr);
+extern IsolatePtr NewIsolate(IsolateOptions opts);
 extern void IsolatePerformMicrotaskCheckpoint(IsolatePtr ptr);
 extern void IsolateDispose(IsolatePtr ptr);
 extern void IsolateTerminateExecution(IsolatePtr ptr);
 extern int IsolateIsExecutionTerminating(IsolatePtr ptr);
 extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 
-extern void SnapshotBlobDelete(SnapshotBlob* ptr);
 extern RtnSnapshotCreator NewSnapshotCreator();
 extern void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator);
 extern size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx);
-extern SnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
-                                ContextPtr ctx,
-                                int function_code_handling);
+extern RtnSnapshotBlob CreateBlob(SnapshotCreatorPtr snapshotCreator,
+                                  ContextPtr ctx,
+                                  int function_code_handling);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
 

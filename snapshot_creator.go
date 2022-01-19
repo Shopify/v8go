@@ -9,6 +9,7 @@ package v8go
 import "C"
 import (
 	"errors"
+	"unsafe"
 )
 
 type FunctionCodeHandling int
@@ -19,14 +20,9 @@ const (
 )
 
 type StartupData struct {
-	ptr   *C.SnapshotBlob
-	index C.size_t
-}
-
-func (s *StartupData) Dispose() {
-	if s.ptr != nil {
-		C.SnapshotBlobDelete(s.ptr)
-	}
+	data     []byte
+	raw_size C.int
+	index    C.size_t
 }
 
 type SnapshotCreator struct {
@@ -75,7 +71,11 @@ func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupDat
 	s.ctx.ptr = nil
 	s.iso.ptr = nil
 
-	return &StartupData{ptr: rtn, index: s.index}, nil
+	raw_size := rtn.raw_size
+	data := C.GoBytes(unsafe.Pointer(rtn.data), raw_size)
+	defer C.free(unsafe.Pointer(rtn.data))
+
+	return &StartupData{data: data, raw_size: raw_size, index: s.index}, nil
 }
 
 func (s *SnapshotCreator) Dispose() {
