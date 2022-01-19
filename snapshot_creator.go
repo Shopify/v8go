@@ -49,8 +49,12 @@ func NewSnapshotCreator() *SnapshotCreator {
 	}
 }
 
-func (s *SnapshotCreator) GetIsolate() *Isolate {
-	return s.iso
+func (s *SnapshotCreator) GetIsolate() (*Isolate, error) {
+	if s.ptr == nil {
+		return nil, errors.New("v8go: Cannot get Isolate after creating the blob")
+	}
+
+	return s.iso, nil
 }
 
 func (s *SnapshotCreator) AddContext(ctx *Context) error {
