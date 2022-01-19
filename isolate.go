@@ -76,7 +76,8 @@ func NewIsolate(opts ...createOptions) *Isolate {
 	var cOptions C.IsolateOptions
 
 	if params.startupData != nil {
-		cOptions.snapshot_blob = params.startupData.ptr
+		cOptions.snapshot_blob_data = (*C.char)(unsafe.Pointer(&params.startupData.data[0]))
+		cOptions.snapshot_blob_raw_size = params.startupData.raw_size
 	}
 
 	iso := &Isolate{
@@ -171,6 +172,7 @@ func (i *Isolate) Dispose() {
 		return
 	}
 	C.IsolateDispose(i.ptr)
+	i.createParams = nil
 	i.ptr = nil
 }
 

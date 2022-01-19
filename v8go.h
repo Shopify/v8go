@@ -92,7 +92,8 @@ typedef struct {
 } CompileOptions;
 
 typedef struct {
-  RtnSnapshotBlob* snapshot_blob;
+  char* snapshot_blob_data;
+  int snapshot_blob_raw_size;
 } IsolateOptions;
 
 typedef struct {

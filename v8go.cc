@@ -158,9 +158,9 @@ IsolatePtr NewIsolate(IsolateOptions options) {
   params.array_buffer_allocator = default_allocator;
 
   StartupData* startup_data;
-  if (options.snapshot_blob != nullptr) {
-    startup_data = new StartupData{options.snapshot_blob->data,
-                                   options.snapshot_blob->raw_size};
+  if (options.snapshot_blob_data != nullptr) {
+    startup_data = new StartupData{options.snapshot_blob_data,
+                                   options.snapshot_blob_raw_size};
     params.snapshot_blob = startup_data;
   } else {
     startup_data = nullptr;
@@ -317,11 +317,11 @@ RtnSnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
   StartupData startup_data = snapshotCreator->CreateBlob(
       SnapshotCreator::FunctionCodeHandling(function_code_handling));
 
-  RtnSnapshotBlob* sb = new RtnSnapshotBlob;
-  sb->data = startup_data.data;
-  sb->raw_size = startup_data.raw_size;
+  RtnSnapshotBlob* rtn = new RtnSnapshotBlob;
+  rtn->data = startup_data.data;
+  rtn->raw_size = startup_data.raw_size;
   delete snapshotCreator;
-  return sb;
+  return rtn;
 }
 
 void SnapshotBlobDelete(RtnSnapshotBlob* ptr) {
