@@ -8,6 +8,7 @@ package v8go
 // #include "v8go.h"
 import "C"
 import (
+	"errors"
 	"runtime"
 	"sync"
 	"unsafe"
@@ -66,24 +67,35 @@ func NewContext(opt ...ContextOption) *Context {
 	ref := ctxSeq
 	ctxMutex.Unlock()
 
-	var ctx *Context
-	createParams := opts.iso.createParams
-	if createParams != nil && createParams.startupData != nil {
-		ctx = &Context{
-			ref: ref,
-			ptr: C.NewContextFromSnapShot(opts.iso.ptr, createParams.startupData.index, C.int(ref)),
-			iso: opts.iso,
-		}
-	} else {
-		ctx = &Context{
-			ref: ref,
-			ptr: C.NewContext(opts.iso.ptr, opts.gTmpl.ptr, C.int(ref)),
-			iso: opts.iso,
-		}
+	ctx := &Context{
+		ref: ref,
+		ptr: C.NewContext(opts.iso.ptr, opts.gTmpl.ptr, C.int(ref)),
+		iso: opts.iso,
 	}
 	ctx.register()
 	runtime.KeepAlive(opts.gTmpl)
 	return ctx
+}
+
+func NewContextFromSnapShot(iso *Isolate, snapshot_index int) (*Context, error) {
+	ctxMutex.Lock()
+	ctxSeq++
+	ref := ctxSeq
+	ctxMutex.Unlock()
+
+	createParams := iso.createParams
+	if createParams == nil || createParams.startupData == nil {
+		return nil, errors.New("Must create an isolate from a snapshot blob")
+	}
+
+	ctx := &Context{
+		ref: ref,
+		ptr: C.NewContextFromSnapShot(iso.ptr, C.size_t(snapshot_index), C.int(ref)),
+		iso: iso,
+	}
+
+	ctx.register()
+	return ctx, nil
 }
 
 // Isolate gets the current context's parent isolate.An  error is returned

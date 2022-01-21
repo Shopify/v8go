@@ -22,14 +22,13 @@ const (
 type StartupData struct {
 	data     []byte
 	raw_size C.int
-	index    C.size_t
 }
 
 type SnapshotCreator struct {
-	ptr   C.SnapshotCreatorPtr
-	iso   *Isolate
-	ctx   *Context
-	index C.size_t
+	ptr                 C.SnapshotCreatorPtr
+	iso                 *Isolate
+	defaultContextAdded bool
+	ctxs                []*Context
 }
 
 func NewSnapshotCreator() *SnapshotCreator {
@@ -40,8 +39,9 @@ func NewSnapshotCreator() *SnapshotCreator {
 	rtn := C.NewSnapshotCreator()
 
 	return &SnapshotCreator{
-		ptr: rtn.creator,
-		iso: &Isolate{ptr: rtn.iso},
+		ptr:                 rtn.creator,
+		iso:                 &Isolate{ptr: rtn.iso},
+		defaultContextAdded: false,
 	}
 }
 
@@ -53,15 +53,27 @@ func (s *SnapshotCreator) GetIsolate() (*Isolate, error) {
 	return s.iso, nil
 }
 
-func (s *SnapshotCreator) AddContext(ctx *Context) error {
-	if s.ptr == nil {
-		return errors.New("v8go: Cannot add context to snapshot creator after creating the blob")
+func (s *SnapshotCreator) SetDeafultContext(ctx *Context) error {
+	if s.defaultContextAdded {
+		return errors.New("v8go: Cannot set multiple default context for snapshot creator")
 	}
 
-	s.index = C.AddContext(s.ptr, ctx.ptr)
-	s.ctx = ctx
+	C.SetDefaultContext(s.ptr, ctx.ptr)
+	s.defaultContextAdded = true
+	ctx.ptr = nil
 
 	return nil
+}
+
+func (s *SnapshotCreator) AddContext(ctx *Context) (int, error) {
+	if s.ptr == nil {
+		return 0, errors.New("v8go: Cannot add context to snapshot creator after creating the blob")
+	}
+
+	index := C.AddContext(s.ptr, ctx.ptr)
+	s.ctxs = append(s.ctxs, ctx)
+
+	return int(index), nil
 }
 
 func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupData, error) {
@@ -69,21 +81,24 @@ func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupDat
 		return nil, errors.New("v8go: Cannot use snapshot creator after creating the blob")
 	}
 
-	if s.ctx == nil {
-		return nil, errors.New("v8go: Cannot create a snapshot without first adding a context")
+	if !s.defaultContextAdded {
+		return nil, errors.New("v8go: Cannot create a snapshot without a default context")
 	}
 
-	rtn := C.CreateBlob(s.ptr, s.ctx.ptr, C.int(functionCode))
+	rtn := C.CreateBlob(s.ptr, C.int(functionCode))
 
 	s.ptr = nil
-	s.ctx.ptr = nil
+	for _, ctx := range s.ctxs {
+		ctx.ptr = nil
+	}
 	s.iso.ptr = nil
+
 	raw_size := rtn.raw_size
 	data := C.GoBytes(unsafe.Pointer(rtn.data), raw_size)
 
 	C.SnapshotBlobDelete(rtn)
 
-	return &StartupData{data: data, raw_size: raw_size, index: s.index}, nil
+	return &StartupData{data: data, raw_size: raw_size}, nil
 }
 
 func (s *SnapshotCreator) Dispose() {

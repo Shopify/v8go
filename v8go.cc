@@ -282,12 +282,6 @@ RtnSnapshotCreator NewSnapshotCreator() {
   RtnSnapshotCreator rtn = {};
   SnapshotCreator* creator = new SnapshotCreator;
   Isolate* iso = creator->GetIsolate();
-  {
-    HandleScope handle_scope(iso);
-    Local<Context> ctx = Context::New(iso);
-    creator->SetDefaultContext(ctx);
-  }
-
   rtn.creator = creator;
   rtn.iso = iso;
 
@@ -298,6 +292,19 @@ void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator) {
   delete snapshotCreator;
 }
 
+void SetDefaultContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx) {
+  Isolate* iso = ctx->iso;
+  Locker locker(iso);
+  Isolate::Scope isolate_scope(iso);
+  HandleScope handle_scope(iso);
+  Local<Context> local_ctx = ctx->ptr.Get(iso);
+  Context::Scope context_scope(local_ctx);
+
+  ContextFree(ctx);
+
+  snapshotCreator->SetDefaultContext(local_ctx);
+}
+
 size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx) {
   Isolate* iso = ctx->iso;
   Locker locker(iso);
@@ -305,13 +312,14 @@ size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx) {
   HandleScope handle_scope(iso);
   Local<Context> local_ctx = ctx->ptr.Get(iso);
   Context::Scope context_scope(local_ctx);
+
+  ContextFree(ctx);
+
   return snapshotCreator->AddContext(local_ctx);
 }
 
 RtnSnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
-                            ContextPtr ctx,
                             int function_code_handling) {
-  ContextFree(ctx);
   //  kKeep - keeps any compiled functions
   //  kClear - does not keep any compiled functions
   StartupData startup_data = snapshotCreator->CreateBlob(

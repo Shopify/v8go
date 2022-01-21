@@ -160,9 +160,10 @@ extern IsolateHStatistics IsolationGetHeapStatistics(IsolatePtr ptr);
 extern void SnapshotBlobDelete(RtnSnapshotBlob* ptr);
 extern RtnSnapshotCreator NewSnapshotCreator();
 extern void DeleteSnapshotCreator(SnapshotCreatorPtr snapshotCreator);
+extern void SetDefaultContext(SnapshotCreatorPtr snapshotCreator,
+                              ContextPtr ctx);
 extern size_t AddContext(SnapshotCreatorPtr snapshotCreator, ContextPtr ctx);
 extern RtnSnapshotBlob* CreateBlob(SnapshotCreatorPtr snapshotCreator,
-                                   ContextPtr ctx,
                                    int function_code_handling);
 
 extern ValuePtr IsolateThrowException(IsolatePtr iso, ValuePtr value);
