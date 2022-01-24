@@ -28,7 +28,6 @@ type SnapshotCreator struct {
 	ptr                 C.SnapshotCreatorPtr
 	iso                 *Isolate
 	defaultContextAdded bool
-	ctxs                []*Context
 }
 
 func NewSnapshotCreator() *SnapshotCreator {
@@ -71,7 +70,7 @@ func (s *SnapshotCreator) AddContext(ctx *Context) (int, error) {
 	}
 
 	index := C.AddContext(s.ptr, ctx.ptr)
-	s.ctxs = append(s.ctxs, ctx)
+	ctx.ptr = nil
 
 	return int(index), nil
 }
@@ -88,9 +87,6 @@ func (s *SnapshotCreator) Create(functionCode FunctionCodeHandling) (*StartupDat
 	rtn := C.CreateBlob(s.ptr, C.int(functionCode))
 
 	s.ptr = nil
-	for _, ctx := range s.ctxs {
-		ctx.ptr = nil
-	}
 	s.iso.ptr = nil
 
 	raw_size := rtn.raw_size
