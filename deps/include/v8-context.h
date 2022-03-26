@@ -318,7 +318,7 @@ class V8_EXPORT Context : public Data {
      * stack may be allocated separately from the native stack.  See also
      * |TryCatch::JSStackComparableAddressPrivate| for details.
      */
-    V8_DEPRECATE_SOON(
+    V8_DEPRECATED(
         "This is private V8 information that should not be exposed in the API.")
     uintptr_t JSStackComparableAddress() const {
       return JSStackComparableAddressPrivate();
@@ -387,10 +387,10 @@ void* Context::GetAlignedPointerFromEmbedderData(int index) {
       I::ReadTaggedPointerField(ctx, I::kNativeContextEmbedderDataOffset);
   int value_offset =
       I::kEmbedderDataArrayHeaderSize + (I::kEmbedderDataSlotSize * index);
-#ifdef V8_HEAP_SANDBOX
+#ifdef V8_SANDBOXED_EXTERNAL_POINTERS
   value_offset += I::kEmbedderDataSlotRawPayloadOffset;
 #endif
-  internal::Isolate* isolate = I::GetIsolateForHeapSandbox(ctx);
+  internal::Isolate* isolate = I::GetIsolateForSandbox(ctx);
   return reinterpret_cast<void*>(
       I::ReadExternalPointerField(isolate, embedder_data, value_offset,
                                   internal::kEmbedderDataSlotPayloadTag));
